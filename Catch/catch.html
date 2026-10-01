@@ -10,34 +10,115 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .4s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>ATTRAPÉS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="hud"><span>ATTRAPÉS <b id="score">0</b></span><span>TEMPS <b id="time">30</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Attrape les 🍎 et évite les 💣. 30 s.</div>
+  <div class="hint">Attrape les pommes et évite les bombes pendant 30 s. (◀ ▶ ou glisse le doigt)</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('catch.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('catch.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('catch.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let px=180, items=[], score=0, t=30000, raf=null;
-function spawn(){ if(Math.random()<0.03) items.push({x:Math.random()*(cv.width-20),y:-20,good:Math.random()>0.3}); }
-function frame(){ spawn(); items.forEach(o=>o.y+=3.5); items=items.filter(o=>o.y<cv.height+20); items.forEach(o=>{ if(Math.abs((o.x+10)-(px+12))<22 && Math.abs(o.y+10-(cv.height-24))<22){ if(o.good) score++; else score=Math.max(0,score-1); o.y=cv.height+99; $('#score').textContent=score; } }); c.clearRect(0,0,cv.width,cv.height); c.fillStyle='#38bdf8';c.fillRect(px,cv.height-24,24,16); items.forEach(o=>{ c.font='20px serif'; c.fillText(o.good?'🍎':'💣',o.x,o.y); }); raf=requestAnimationFrame(frame); }
-cv.addEventListener('pointermove',e=>{ const r=cv.getBoundingClientRect(); px=(e.clientX-r.left)*(cv.width/r.width)-12; px=Math.max(0,Math.min(cv.width-24,px)); });
-$('#go').onclick=()=>{ px=180; items=[]; score=0; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); setTimeout(()=>{ cancelAnimationFrame(raf); saveHigh(score); },t); };
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const DUR=30, BW=58;
+let px,items,score,keys,t0,running,raf,last;
+function reset(){
+  px=cv.width/2; items=[]; score=0; keys={}; running=true;
+  t0=performance.now(); last=0;
+  $('#score').textContent='0'; $('#time').textContent=DUR;
+  ov.classList.add('hide'); area.classList.remove('shake');
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function spawn(){
+  const good=Math.random()<0.72;
+  items.push({x:16+Math.random()*(cv.width-32),y:-26,good,vy:2.6+Math.random()*1.3,r:14});
+}
+function flashRing(color){
+  area.style.transition='none'; area.style.boxShadow='inset 0 0 0 3px '+color;
+  requestAnimationFrame(()=>{ area.style.transition='box-shadow .4s'; area.style.boxShadow='inset 0 0 0 3px transparent'; });
+}
+function endGame(){
+  running=false; cancelAnimationFrame(raf);
+  saveHigh(score);
+  Arcade.sfx('lose');
+  ov.innerHTML='<div class="t">TEMPS ÉCOULÉ</div><div class="s">Attrapés : '+score+'</div>';
+  ov.classList.remove('hide');
+}
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  const el=(ts-t0)/1000;
+  const rem=Math.max(0,DUR-el);
+  $('#time').textContent=Math.ceil(rem);
+  if(rem<=0){ draw(el); endGame(); return; }
+  const v=320*dt;
+  if(keys['ArrowLeft']) px-=v;
+  if(keys['ArrowRight']) px+=v;
+  px=Math.max(BW/2,Math.min(cv.width-BW/2,px));
+  if(Math.random()<0.028+el*0.0006) spawn();
+  const fall=(1+el*0.03);
+  for(const o of items) o.y+=(o.vy*fall)*dt*60;
+  items=items.filter(o=>o.y<cv.height+30);
+  const basketY=cv.height-20;
+  for(let i=items.length-1;i>=0;i--){
+    const o=items[i];
+    if(o.y+o.r>=basketY && o.y<cv.height){
+      if(Math.abs(o.x-px)<BW/2+o.r*0.6){
+        items.splice(i,1);
+        if(o.good){
+          score++; $('#score').textContent=score;
+          flashRing('#22c55e'); Arcade.sfx('coin');
+        } else {
+          score=Math.max(0,score-1); $('#score').textContent=score;
+          area.classList.remove('shake'); void area.offsetWidth; area.classList.add('shake');
+          flashRing('#ef4444'); Arcade.sfx('hit');
+        }
+      }
+    }
+  }
+  draw(el);
+  raf=requestAnimationFrame(loop);
+}
+function draw(el){
+  c.clearRect(0,0,cv.width,cv.height);
+  c.fillStyle='rgba(56,189,248,.22)'; c.fillRect(0,cv.height-2,cv.width,2);
+  c.font='22px sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  for(const o of items){ c.fillText(o.good?'🍎':'💣',o.x,o.y); }
+  c.fillStyle='#38bdf8'; c.beginPath();
+  const py=cv.height-14, hw=BW/2;
+  c.moveTo(px-hw,py); c.lineTo(px+hw,py); c.lineTo(px+hw-8,py+12); c.lineTo(px-hw+8,py+12); c.closePath(); c.fill();
+  const rem=Math.max(0,DUR-el);
+  c.fillStyle='#64748b'; c.font='bold 12px monospace'; c.textAlign='left'; c.textBaseline='alphabetic'; c.fillText(Math.ceil(rem)+'s',10,16);
+}
+document.addEventListener('keydown',e=>{ keys[e.key]=true; if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault(); });
+document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+cv.addEventListener('pointermove',e=>{
+  if(!running) return;
+  const r=cv.getBoundingClientRect();
+  px=(e.clientX-r.left)*(cv.width/r.width);
+  px=Math.max(BW/2,Math.min(cv.width-BW/2,px));
+});
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

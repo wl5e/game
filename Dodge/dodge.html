@@ -10,36 +10,99 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .4s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>TEMPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Déplace-toi avec ◀ ▶ (ou glisse) pour éviter les blocs. Survie = temps.</div>
+  <div class="hint">Objectif : survivre 40 s. Déplace-toi avec ◀ ▶ (ou glisse le doigt) pour esquiver les blocs qui tombent.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('dodge.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('dodge.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('dodge.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let px=180, py=cv.height-30, objs=[], t=0, alive=true, raf=null;
-function spawn(){ if(Math.random()<0.03) objs.push({x:Math.random()*(cv.width-24),y:-20,w:24,h:24}); }
-function frame(){ t++; spawn(); objs.forEach(o=>o.y+=3); objs=objs.filter(o=>o.y<cv.height+20); if(objs.some(o=>px<o.x+o.w&&px+24>o.x&&py<o.y+o.h&&py+24>o.y)){ alive=false; } c.clearRect(0,0,cv.width,cv.height); c.fillStyle='#38bdf8';c.fillRect(px,py,24,24); c.fillStyle='#f87171'; objs.forEach(o=>c.fillRect(o.x,o.y,o.w,o.h)); if(!alive){ const s=Math.floor(t/30); saveHigh(s); $('#score').textContent=s; cancelAnimationFrame(raf); c.fillStyle='#f87171';c.font='bold 20px monospace';c.textAlign='center';c.fillText('TOUCHÉ',cv.width/2,cv.height/2); } else { $('#score').textContent=Math.floor(t/30); raf=requestAnimationFrame(frame); } }
-let keys={}; document.addEventListener('keydown',e=>keys[e.key]=true); document.addEventListener('keyup',e=>keys[e.key]=false);
-function step(){ if(keys['ArrowLeft']||keys['a']) px-=4; if(keys['ArrowRight']||keys['d']) px+=4; px=Math.max(0,Math.min(cv.width-24,px)); }
-$('#go').onclick=()=>{ px=180; py=cv.height-30; objs=[]; t=0; alive=true; cancelAnimationFrame(raf); $('#score').textContent='0'; setInterval(step,16); frame(); };
-cv.addEventListener('pointermove',e=>{ const r=cv.getBoundingClientRect(); px=(e.clientX-r.left)*(cv.width/r.width)-12; px=Math.max(0,Math.min(cv.width-24,px)); });
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const PW=24, PAR=40;
+let p,obs,keys,running,t0,raf,last,parHit;
+function reset(){
+  p={x:cv.width/2-PW/2,y:cv.height-30};
+  obs=[]; keys={}; running=true; parHit=false;
+  t0=performance.now(); last=0;
+  ov.classList.add('hide'); area.classList.remove('shake');
+  $('#score').textContent='0';
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function spawn(){
+  const w=14+Math.random()*18;
+  obs.push({x:Math.random()*(cv.width-w),y:-28,w,h:28});
+}
+function endGame(){
+  running=false; cancelAnimationFrame(raf);
+  const s=Math.floor((performance.now()-t0)/1000);
+  saveHigh(s);
+  area.classList.add('shake'); Arcade.sfx('hit');
+  setTimeout(()=>Arcade.sfx('lose'),140);
+  ov.innerHTML='<div class="t" style="color:#f87171">TOUCHÉ</div><div class="s">Tu as survécu '+s+' s'+(s>=PAR?' · PAR atteint !':'')+'</div>';
+  ov.classList.remove('hide');
+}
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  const el=(ts-t0)/1000;
+  const v=280*dt;
+  if(keys['ArrowLeft']||keys['a']) p.x-=v;
+  if(keys['ArrowRight']||keys['d']) p.x+=v;
+  p.x=Math.max(0,Math.min(cv.width-PW,p.x));
+  if(Math.random()<Math.min(0.06,0.028+el*0.004)) spawn();
+  const fall=(2.8+el*0.22)*dt*60;
+  for(const o of obs) o.y+=fall;
+  obs=obs.filter(o=>o.y<cv.height+30);
+  for(const o of obs){
+    if(p.x<o.x+o.w && p.x+PW>o.x && p.y<o.y+o.h && p.y+PW>o.y){
+      draw(el); endGame(); return;
+    }
+  }
+  if(!parHit && el>=PAR){ parHit=true; Arcade.sfx('win'); }
+  draw(el);
+  $('#score').textContent=Math.floor(el);
+  raf=requestAnimationFrame(loop);
+}
+function draw(el){
+  c.clearRect(0,0,cv.width,cv.height);
+  c.fillStyle='rgba(56,189,248,.22)'; c.fillRect(0,cv.height-2,cv.width,2);
+  c.fillStyle='#f87171';
+  for(const o of obs){ c.fillRect(o.x,o.y,o.w,o.h); c.fillStyle='rgba(248,113,113,.35)'; c.fillRect(o.x+3,o.y+3,o.w-6,o.h-6); c.fillStyle='#f87171'; }
+  c.fillStyle='#38bdf8'; c.fillRect(p.x,p.y,PW,PW);
+  c.fillStyle='rgba(255,255,255,.5)'; c.fillRect(p.x+4,p.y+4,PW-8,4);
+  if(parHit){ c.fillStyle='#4ade80'; c.font='bold 14px monospace'; c.textAlign='center'; c.fillText('PAR 40 s !',cv.width/2,30); }
+}
+document.addEventListener('keydown',e=>{ keys[e.key]=true; if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault(); });
+document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+cv.addEventListener('pointermove',e=>{
+  if(!running) return;
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)*(cv.width/r.width);
+  p.x=Math.max(0,Math.min(cv.width-PW,x-PW/2));
+});
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

@@ -1,45 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Grid Memory</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:270px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button.big{width:100%}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  #g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:26px}
+  .cell{width:70px;height:70px;border-radius:12px;background:#1e293b;border:1px solid #334155;cursor:pointer;transition:background .12s}
+  .cell.on{background:#38bdf8;box-shadow:0 0 16px #38bdf8aa}
+  .cell.good{background:#4ade80;box-shadow:0 0 10px #4ade8088}
+  .cell.bad{background:#f87171;box-shadow:0 0 12px #f87171aa}
+  .msg{position:absolute;top:14px;left:0;right:0;font-size:11px;letter-spacing:.2em;color:#64748b}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(7,11,18,.88);z-index:5;text-align:center}
+  .overlay .t{font-size:26px;font-weight:800;color:#f87171}
+  .overlay .s{color:#94a3b8;margin-top:10px;font-size:13px;line-height:1.6}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  .shake{animation:shake .3s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>NIVEAU <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div></div>
-  <button id="go">Rejouer</button>
-  <div class="hint">Mémorise les cases allumées, puis re-clique-les. Niveau = cases à retenir.</div>
+  <div class="hud"><span>NIVEAU <b id="score">1</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="msg" id="msg">Mémorise l'ordre…</div>
+    <div id="g"></div>
+  </div>
+  <button class="big" id="go">Rejouer</button>
+  <div class="hint">Mémorise l'<b>ordre</b> des cases qui s'allument, puis rejoue-le. Plus tu vas loin, plus il y a de cases. · Par 6</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('gridmemory.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('gridmemory.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('gridmemory.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-let level=1, phase='show', cells=[];
-function render(){ const g=$('#g'); g.innerHTML=''; for(let i=0;i<9;i++){ const d=document.createElement('div'); d.style.cssText='width:60px;height:60px;border-radius:10px;background:#1e293b;border:1px solid #334155;cursor:pointer'; d.onclick=()=>click(i); g.appendChild(d); } }
-function lit(){ document.querySelectorAll('#g div').forEach((d,i)=>{ d.style.background=cells.includes(i)?'#4ade80':'#1e293b'; }); }
-function show(){ cells=[]; while(cells.length<Math.min(level,9)){ const i=Math.floor(Math.random()*9); if(!cells.includes(i)) cells.push(i); } lit(); setTimeout(()=>{ document.querySelectorAll('#g div').forEach(d=>d.style.background='#1e293b'); phase='pick'; }, 900); }
-let picked=[];
-function click(i){ if(phase!=='pick') return; picked.push(i); document.querySelectorAll('#g div')[i].style.background='#4ade80'; if(picked.length===cells.length){ if(picked.every((v,j)=>v===cells[j])){ level++; $('#score').textContent=level; setTimeout(()=>{ picked=[]; show(); },500); } else { saveHigh(level); $('#area').innerHTML='<div class="big">FINI ! Niveau '+level+'</div>'; } } }
-$('#go').onclick=()=>{ level=1; picked=[]; phase='show'; $('#score').textContent='1'; $('#area').innerHTML='<div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>'; render(); show(); };
+function saveHigh(v){ if(v>best){ best=v; try{localStorage.setItem('gridmemory.best',String(v))}catch(e){} upd(); } }
+
+const g=$('#g');
+let level=1, seq=[], pick=0, busy=true, over=false, gen=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+function renderCells(){ g.innerHTML=''; for(let i=0;i<9;i++){ const c=document.createElement('div'); c.className='cell'; c.onclick=()=>tap(i); g.appendChild(c); } }
+function cell(i){ return g.children[i]; }
+function setMsg(t){ $('#msg').textContent=t; }
+
+async function startRound(myGen){
+  busy=true; over=false; pick=0;
+  seq=[]; while(seq.length<Math.min(level,9)){ const i=Math.floor(Math.random()*9); if(!seq.includes(i)) seq.push(i); }
+  renderCells();
+  setMsg('Mémorise l\'ordre…');
+  await sleep(750);
+  for(const i of seq){
+    if(gen!==myGen) return;
+    cell(i).classList.add('on'); Arcade.sfx('tick');
+    await sleep(Math.max(430, 740 - level*22));
+    if(gen!==myGen) return;
+    cell(i).classList.remove('on');
+    await sleep(140);
+  }
+  if(gen!==myGen) return;
+  busy=false;
+  setMsg('À toi — rejoue l\'ordre');
+}
+
+function tap(i){
+  if(busy||over) return;
+  if(i!==seq[pick]){
+    over=true;
+    cell(i).classList.add('bad');
+    $('#area').classList.add('shake'); setTimeout(()=>$('#area').classList.remove('shake'),320);
+    Arcade.sfx('wrong'); setTimeout(()=>Arcade.sfx('lose'),220);
+    saveHigh(level);
+    showOver('Perdu !', 'Niveau atteint : '+level+'<br>La bonne case était la '+(seq[pick]+1)+'ᵉ');
+    return;
+  }
+  cell(i).classList.add('good'); Arcade.sfx('pop');
+  pick++;
+  if(pick===seq.length){
+    over=true; busy=true;
+    Arcade.sfx('correct');
+    level++; $('#score').textContent=level;
+    setMsg('✔ Niveau '+level+' !');
+    setTimeout(()=>startRound(gen), 760);
+  }
+}
+
+function showOver(t,s){
+  const ov=document.createElement('div'); ov.className='overlay'; ov.innerHTML='<div><div class="t">'+t+'</div><div class="s">'+s+'</div></div>';
+  $('#area').appendChild(ov);
+}
+
+function reset(){
+  gen++;
+  level=1; seq=[]; pick=0; over=false; busy=true;
+  $('#score').textContent='1';
+  const ov=$('.overlay'); if(ov) ov.remove();
+  $('#area').classList.remove('shake');
+  renderCells(); setMsg('Préparation…');
+  upd();
+  startRound(gen);
+}
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

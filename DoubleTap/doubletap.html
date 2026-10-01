@@ -6,37 +6,106 @@
 <title>Double Tap</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent;user-select:none}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
-  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
-  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
-  button:active{transform:translateY(1px)}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;font-weight:700;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;position:relative;overflow:hidden}
+  .big{font-size:38px;font-weight:800;line-height:1}
+  .small{color:#64748b;font-size:13px}
+  .bar{width:100%;height:8px;border-radius:99px;background:#1e293b;overflow:hidden}
+  .fill{height:100%;width:100%;background:#38bdf8;border-radius:99px}
+  .row{display:flex;gap:12px;width:100%}
+  .opt{flex:1;font-family:inherit;border:1px solid #334155;border-radius:12px;padding:18px 10px;font-size:15px;font-weight:800;background:#1e293b;color:#e2e8f0;cursor:pointer;letter-spacing:.05em;touch-action:manipulation;transition:background .12s,border-color .12s,transform .12s,box-shadow .12s}
+  .opt.on{border-color:#38bdf8;box-shadow:0 0 0 2px rgba(56,189,248,.35),0 0 22px rgba(56,189,248,.25);background:#132a3d}
+  .opt.good{background:#14532d;border-color:#22c55e}
+  .opt.bad{background:#7f1d1d;border-color:#ef4444;animation:shake .3s}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer;letter-spacing:.03em;touch-action:manipulation}
+  button:active{transform:translateY(1px) scale(.98)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>TAPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div style="display:flex;gap:10px"><button class="opt" id="a">◀ GAUCHE</button><button class="opt" id="b">DROITE ▶</button></div></div>
+  <div class="area" id="area">
+    <div class="big" id="big">3</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+    <div class="row">
+      <button class="opt" id="a">◀ GAUCHE</button>
+      <button class="opt" id="b">DROITE ▶</button>
+    </div>
+    <div class="small" id="sub">Le bouton allumé est le prochain.</div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Alterne les deux boutons le plus vite possible pendant 15 s.</div>
+  <div class="hint">Alterne les deux boutons le plus vite possible pendant <b>15 s</b>.<br>Objectif : 60 taps ou plus. (← → au clavier)</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
-let best=0;try{best=parseInt(localStorage.getItem('doubletap.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('doubletap.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('doubletap.best',String(v))}catch(e){}} upd(); }
+const sfx=n=>{ try{ if(window.Arcade) window.Arcade.sfx(n); }catch(e){} };
+const KEY='doubletap.best', DUR=15000, PAR=60;
+let best=0; try{ best=parseInt(localStorage.getItem(KEY)||'0',10)||0; }catch(e){}
 function upd(){ $('#best').textContent=best?best:'—'; }
-let taps=0, side=0, t=15000, running=false, last=0;
-$('#a').onclick=()=>tap(0); $('#b').onclick=()=>tap(1);
-function tap(s){ if(!running) return; if(s===side){ taps++; side=1-side; $('#score').textContent=taps; } }
-$('#go').onclick=()=>{ taps=0; side=0; running=true; $('#score').textContent='0'; setTimeout(()=>{ running=false; saveHigh(taps); },t); };
-upd();
+function save(v){ if(v>best){ best=v; try{ localStorage.setItem('doubletap.best',String(v)); }catch(e){} } upd(); }
+
+const a=$('#a'), b=$('#b'), big=$('#big'), sub=$('#sub'), fill=$('#fill'), scoreEl=$('#score');
+let taps=0, side=0, phase='idle', cd=3, cdTimer=null, raf=null, startAt=0, endAt=0;
+
+function setActive(){ a.classList.toggle('on',side===0); b.classList.toggle('on',side===1); }
+function begin(){
+  clearInterval(cdTimer); cancelAnimationFrame(raf);
+  phase='countdown'; taps=0; side=0; cd=3;
+  scoreEl.textContent='0'; fill.style.width='100%';
+  setActive(); big.textContent=cd; sub.textContent='Le bouton allumé est le prochain.';
+  cdTimer=setInterval(()=>{
+    cd--;
+    if(cd>0){ big.textContent=cd; sfx('tick'); }
+    else{
+      clearInterval(cdTimer);
+      phase='go'; startAt=performance.now(); endAt=startAt+DUR;
+      big.textContent='GO !'; sfx('whoosh'); loop();
+    }
+  },700);
+}
+function loop(){
+  if(phase!=='go') return;
+  const left=endAt-performance.now();
+  if(left<=0){ finish(); return; }
+  fill.style.width=(left/DUR*100)+'%';
+  big.textContent=(left/1000).toFixed(1)+'s';
+  raf=requestAnimationFrame(loop);
+}
+function finish(){
+  phase='end'; cancelAnimationFrame(raf);
+  save(taps);
+  fill.style.width='0%'; a.classList.remove('on'); b.classList.remove('on');
+  big.textContent=taps+' taps';
+  sub.textContent=(taps===best && taps>0)?'Nouveau record !':('Best : '+(best?best:'—'));
+  sfx(taps>=PAR?'win':'pop');
+}
+function tap(s){
+  if(phase!=='go') return;
+  const btn = s===0?a:b;
+  if(s===side){
+    taps++; side=1-side; scoreEl.textContent=taps;
+    btn.classList.add('good'); setTimeout(()=>btn.classList.remove('good'),160);
+    sfx('tick'); setActive();
+  } else {
+    btn.classList.add('bad'); setTimeout(()=>btn.classList.remove('bad'),300);
+    sfx('wrong');
+  }
+}
+a.addEventListener('pointerdown',e=>{ e.preventDefault(); tap(0); });
+b.addEventListener('pointerdown',e=>{ e.preventDefault(); tap(1); });
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'){ e.preventDefault(); tap(0); }
+  else if(e.key==='ArrowRight'){ e.preventDefault(); tap(1); }
+});
+$('#go').addEventListener('click',begin);
+begin(); upd();
 </script>
 </body>
 </html>

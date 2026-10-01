@@ -6,36 +6,114 @@
 <title>Roulette</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:default}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:11px 18px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
   .opt:hover{border-color:#38bdf8}
+  .opt:disabled{opacity:.4;cursor:default}
+  .row{display:flex;gap:10px}
+  .msg{font-size:13px;color:#94a3b8;min-height:18px;line-height:1.5}
+  .wheel{width:110px;height:110px;border-radius:50%;background:conic-gradient(#dc2626 0 25%,#0f172a 25% 50%,#dc2626 50% 75%,#0f172a 75% 100%);border:6px solid #fbbf24;display:grid;place-items:center;position:relative;box-shadow:0 14px 30px -12px #000}
+  .wheel::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:#fbbf24;border:2px solid #78350f}
+  .wheel .val{width:52px;height:52px;border-radius:50%;background:#0b1220;border:1px solid #334155;display:grid;place-items:center;font-size:20px;font-weight:800;z-index:1}
+  .wheel.spin{animation:rot .9s ease-out}
+  @keyframes rot{0%{transform:rotate(0)}100%{transform:rotate(1080deg)}}
+  .meta{font-size:12px;color:#64748b;letter-spacing:.1em}
+  .meta b{color:#38bdf8}
+  .area.good{animation:goodflash .5s}
+  .area.bad{animation:badflash .5s}
+  @keyframes goodflash{0%{box-shadow:inset 0 0 0 4px #22c55e;background:#06281c}100%{box-shadow:inset 0 0 0 0 #22c55e}}
+  @keyframes badflash{0%{box-shadow:inset 0 0 0 4px #ef4444;background:#2a0a0e}100%{box-shadow:inset 0 0 0 0 #ef4444}}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>SOLDE <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="res">?</div><div class="big" id="bal">1000</div><div style="display:flex;gap:10px;margin-top:12px"><button class="opt" id="r" style="color:#f87171">ROUGE</button><button class="opt" id="n">NOIR</button></div></div>
+  <div class="hud"><span>SOLDE <b id="score">1000</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="wheel" id="wheel"><div class="val" id="val">?</div></div>
+    <div class="meta">TOURS RESTANTS <b id="left">20</b> · MISE <b>50</b></div>
+    <div class="msg" id="msg">Mise sur ROUGE ou NOIR. Le 0 vert perd toujours.</div>
+    <div class="row"><button class="opt" id="r" style="color:#f87171">ROUGE</button><button class="opt" id="n">NOIR</button></div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Mise sur Rouge ou Noir. 20 tours.</div>
+  <div class="hint">20 tours à 50 la mise. Gagné = +50, perdu = −50.<br>Termine avec le plus gros solde possible (objectif : 800+).</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('roulette.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('roulette.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('roulette.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-let bal=1000, turns=20;
-function spin(pickRed){ if(turns<=0) return; turns--; bal-=50; const red=Math.random()<0.48; $('#res').textContent=red?'🔴':'⚫'; if(red===pickRed) bal+=100; $('#bal').textContent=bal; if(turns===0){ saveHigh(bal); $('#score').textContent=bal; } }
-$('#r').onclick=()=>spin(true); $('#n').onclick=()=>spin(false);
-$('#go').onclick=()=>{ bal=1000; turns=20; $('#bal').textContent='1000'; $('#score').textContent='0'; $('#res').textContent='?'; };
+const RED=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const area=$('#area'), wheel=$('#wheel'), val=$('#val'), msg=$('#msg');
+const btnR=$('#r'), btnN=$('#n');
+let bal=1000, turns=20, busy=false, over=false;
+function flash(kind){ area.classList.remove('good','bad'); void area.offsetWidth; area.classList.add(kind); }
+function paint(){ $('#score').textContent=bal; $('#left').textContent=turns; }
+function colorOf(n){ return n===0?'green':(RED.has(n)?'red':'black'); }
+function display(n){ val.textContent=n; val.style.color=n===0?'#22c55e':(RED.has(n)?'#f87171':'#cbd5e1'); }
+function spin(pickRed){
+  if(busy||over||turns<=0) return;
+  busy=true;
+  turns--; bal-=50;
+  msg.textContent='La roue tourne…';
+  paint(); Arcade.sfx('tick');
+  btnR.disabled=true; btnN.disabled=true;
+  wheel.classList.remove('spin'); void wheel.offsetWidth; wheel.classList.add('spin');
+  let n=0;
+  const iv=setInterval(()=>{ display(Math.floor(Math.random()*37)); },70);
+  setTimeout(()=>{
+    clearInterval(iv);
+    wheel.classList.remove('spin');
+    const num=Math.floor(Math.random()*37);
+    const col=colorOf(num);
+    display(num);
+    const win = (col==='red'&&pickRed)||(col==='black'&&!pickRed);
+    if(win){
+      bal+=100;
+      msg.textContent=(col==='red'?'🔴':'⚫')+' '+num+' — gagné ! +50';
+      flash('good'); Arcade.sfx('coin');
+    }else{
+      msg.textContent=(col==='red'?'🔴':col==='black'?'⚫':'🟢')+' '+num+' — perdu. −50';
+      area.classList.add('shake'); flash('bad'); Arcade.sfx('wrong');
+      setTimeout(()=>area.classList.remove('shake'),500);
+    }
+    paint();
+    if(turns<=0||bal<50){
+      over=true;
+      const rec=bal>best;
+      saveHigh(bal);
+      msg.innerHTML='Partie terminée — Solde <b>'+bal+'</b>'+(rec?' — RECORD !':'');
+      (rec?Arcade.sfx('win'):Arcade.sfx('lose'));
+      return;
+    }
+    btnR.disabled=false; btnN.disabled=false;
+    busy=false;
+  },900);
+}
+function reset(){
+  bal=1000; turns=20; busy=false; over=false;
+  display('?'); val.style.color='#cbd5e1';
+  wheel.classList.remove('spin');
+  msg.textContent='Mise sur ROUGE ou NOIR. Le 0 vert perd toujours.';
+  area.classList.remove('good','bad','shake');
+  btnR.disabled=false; btnN.disabled=false;
+  paint();
+}
+btnR.onclick=()=>spin(true);
+btnN.onclick=()=>spin(false);
+$('#go').onclick=reset;
+paint();
 upd();
 </script>
 </body>

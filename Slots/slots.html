@@ -6,35 +6,130 @@
 <title>Slots</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:default}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .msg{font-size:13px;color:#94a3b8;min-height:18px;line-height:1.5}
+  .reels{display:flex;gap:10px}
+  .reel{width:84px;height:96px;border-radius:14px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1px solid #334155;display:grid;place-items:center;font-size:48px;line-height:1;box-shadow:0 10px 24px -12px #000}
+  .reel.hot{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.25),0 10px 24px -12px #000}
+  .meta{font-size:12px;color:#64748b;letter-spacing:.1em}
+  .meta b{color:#38bdf8}
+  .area.good{animation:goodflash .5s}
+  .area.bad{animation:badflash .5s}
+  @keyframes goodflash{0%{box-shadow:inset 0 0 0 4px #22c55e;background:#06281c}100%{box-shadow:inset 0 0 0 0 #22c55e}}
+  @keyframes badflash{0%{box-shadow:inset 0 0 0 4px #ef4444;background:#2a0a0e}100%{box-shadow:inset 0 0 0 0 #ef4444}}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .pulse{animation:pulse .5s ease}
+  @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.25)}100%{transform:scale(1)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>SOLDE <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="reels">🍒 🍋 🍇</div><div class="big" id="bal">1000</div></div>
+  <div class="hud"><span>SOLDE <b id="score">1000</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="reels">
+      <div class="reel" id="r0">🍒</div>
+      <div class="reel" id="r1">🍋</div>
+      <div class="reel" id="r2">🍇</div>
+    </div>
+    <div class="meta">TOURS RESTANTS <b id="left">20</b> · MISE <b>20</b></div>
+    <div class="msg" id="msg">Appuie sur SPIN pour lancer la machine.</div>
+    <button id="spin">SPIN</button>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Fais tourner la machine. 3 pareils = gain. 20 tours.</div>
+  <div class="hint">20 tours à 20 la mise. 3 pareils = +500, une paire = +30.<br>Termine avec le plus gros solde possible (objectif : 500+).</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('slots.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('slots.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('slots.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const SYM=['🍒','🍋','🍇','🔔','⭐','7️⃣']; let bal=1000, spins=20;
-$('#area').onclick=()=>{ if(spins<=0) return; spins--; bal-=20; const r=[SYM[Math.floor(Math.random()*SYM.length)],SYM[Math.floor(Math.random()*SYM.length)],SYM[Math.floor(Math.random()*SYM.length)]]; $('#reels').textContent=r.join(' '); if(r[0]===r[1]&&r[1]===r[2]) bal+=500; else if(r[0]===r[1]||r[1]===r[2]) bal+=30; $('#bal').textContent=bal; if(spins===0){ saveHigh(bal); $('#score').textContent=bal; } };
-$('#go').onclick=()=>{ bal=1000; spins=20; $('#bal').textContent='1000'; $('#score').textContent='0'; };
+const SYM=['🍒','🍋','🍇','🔔','⭐','7️⃣'];
+const area=$('#area'), msg=$('#msg'), spinBtn=$('#spin');
+const reels=[$('#r0'),$('#r1'),$('#r2')];
+let bal=1000, spins=20, busy=false, over=false;
+const result=[null,null,null];
+function flash(kind){ area.classList.remove('good','bad'); void area.offsetWidth; area.classList.add(kind); }
+function paint(){
+  $('#score').textContent=bal;
+  $('#left').textContent=spins;
+}
+function spin(){
+  if(busy||over||spins<=0) return;
+  busy=true; over=false;
+  spins--; bal-=20;
+  msg.textContent='Ça tourne…';
+  paint(); Arcade.sfx('click');
+  reels.forEach(r=>{ r.classList.remove('hot','pulse'); });
+  // start cycling all reels, stop each one staggered
+  const timers=[];
+  reels.forEach(r=>{
+    const iv=setInterval(()=>{ r.textContent=SYM[Math.floor(Math.random()*SYM.length)]; },60);
+    timers.push(iv);
+  });
+  const stops=[500,850,1200];
+  stops.forEach((ms,i)=>{
+    setTimeout(()=>{
+      clearInterval(timers[i]);
+      result[i]=SYM[Math.floor(Math.random()*SYM.length)];
+      reels[i].textContent=result[i];
+      reels[i].classList.add('pulse');
+      Arcade.sfx('tick');
+      if(i===2) setTimeout(evaluate,200);
+    },ms);
+  });
+}
+function evaluate(){
+  const [a,b2,c]=result;
+  let gain=0, kind='none';
+  if(a===b2&&b2===c){ gain=500; kind='triple'; }
+  else if(a===b2||b2===c||a===c){ gain=30; kind='pair'; }
+  bal+=gain;
+  if(kind==='triple'){
+    msg.textContent='3 PAREILS ! +500 🎉';
+    reels.forEach(r=>r.classList.add('hot'));
+    flash('good'); Arcade.sfx('win');
+  }else if(kind==='pair'){
+    msg.textContent='Une paire ! +30';
+    flash('good'); Arcade.sfx('coin');
+  }else{
+    msg.textContent='Rien cette fois. −20';
+    flash('bad'); Arcade.sfx('wrong');
+  }
+  paint();
+  if(spins<=0||bal<20){
+    over=true; busy=false;
+    const rec=bal>best;
+    saveHigh(bal);
+    msg.innerHTML='Partie terminée — Solde <b>'+bal+'</b>'+(rec?' — RECORD !':'');
+    spinBtn.disabled=true;
+    (rec?Arcade.sfx('win'):Arcade.sfx('lose'));
+    return;
+  }
+  busy=false;
+}
+function reset(){
+  bal=1000; spins=20; busy=false; over=false;
+  result.fill(null);
+  reels.forEach((r,i)=>{ r.textContent=['🍒','🍋','🍇'][i]; r.classList.remove('hot','pulse'); });
+  msg.textContent='Appuie sur SPIN pour lancer la machine.';
+  area.classList.remove('good','bad');
+  spinBtn.disabled=false;
+  paint();
+}
+spinBtn.onclick=spin;
+$('#go').onclick=reset;
+paint();
 upd();
 </script>
 </body>

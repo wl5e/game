@@ -10,33 +10,54 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none;padding:20px;min-height:230px;text-align:center}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .big{font-size:30px;font-weight:800;color:#fff;letter-spacing:.05em}
+  input{background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:9px;font-size:18px;text-align:center;width:200px;font-family:inherit;outline:none}
+  input:focus{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.9);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .good{color:#4ade80!important;animation:pop .25s}
+  .bad{color:#f87171!important;animation:shake .3s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>MOTS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="w">hello</div><input id="in" maxlength="20" style="background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px;font-size:18px;text-align:center;width:180px" placeholder="?"></div>
+  <div class="hud"><span>MOTS <b id="score">0</b></span><span>TEMPS <b id="time">60</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><div class="big" id="w">hello</div><input id="in" maxlength="20" placeholder="Tape ici" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Tape le plus de mots possible en 60 secondes.</div>
+  <div class="hint">Objectif : 40 mots en 60 s. Tape chaque mot affiché (validation automatique).</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('typing.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('typing.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('typing.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const WORDS=['chat','chien','soleil','pluie','neige','vent','fleur','arbre','pierre','mer','ciel','feu','eau','terre','jour','nuit','jeu','code','pixel','etoile','lune','feuille','montagne','riviere']; let score=0, cur='', t=60000;
+const WORDS=['chat','chien','soleil','pluie','neige','vent','fleur','arbre','pierre','mer','ciel','feu','eau','terre','jour','nuit','jeu','code','pixel','etoile','lune','feuille','montagne','riviere','livre','porte','temps','monde','route','ville'];
+const DUR=60;
+let score,cur,t0,timerId,running,lastWrong=0;
 function q(){ cur=WORDS[Math.floor(Math.random()*WORDS.length)]; $('#w').textContent=cur; }
-$('#in').onkeydown=e=>{ if(e.key==='Enter'){ if($('#in').value.trim()===cur){ score++; $('#score').textContent=score; $('#in').value=''; q(); } } };
-$('#go').onclick=()=>{ score=0; $('#score').textContent='0'; $('#in').value=''; q(); setTimeout(()=>{ saveHigh(score); },t); };
+function endGame(){ running=false; clearInterval(timerId); saveHigh(score); $('#in').disabled=true; Arcade.sfx('win'); $('#ov').innerHTML='<div class="t">TEMPS ÉCOULÉ</div><div class="s">Mots tapés : '+score+'</div>'; $('#ov').classList.remove('hide'); }
+function reset(){ score=0; running=true; $('#score').textContent='0'; $('#time').textContent=DUR; $('#in').value=''; $('#in').disabled=false; t0=performance.now(); lastWrong=0; $('#ov').classList.add('hide'); clearInterval(timerId); timerId=setInterval(()=>{ if(!running) return; const rem=Math.max(0,DUR-(performance.now()-t0)/1000); $('#time').textContent=Math.ceil(rem); if(rem<=0) endGame(); },200); q(); $('#in').focus(); }
+function flash(cls){ const w=$('#w'); w.classList.remove('good','bad'); void w.offsetWidth; w.classList.add(cls); }
+$('#in').addEventListener('input',()=>{
+  if(!running) return;
+  const val=$('#in').value;
+  if(val===cur){ score++; $('#score').textContent=score; $('#in').value=''; flash('good'); Arcade.sfx('correct'); q(); }
+  else if(!cur.startsWith(val)){ flash('bad'); const now=performance.now(); if(now-lastWrong>250){ Arcade.sfx('wrong'); lastWrong=now; } }
+});
+$('#area').addEventListener('pointerdown',()=>{ if(running) $('#in').focus(); });
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

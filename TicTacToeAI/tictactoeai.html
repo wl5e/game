@@ -6,40 +6,131 @@
 <title>Tic-Tac-Toe AI</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .msg{font-size:13px;color:#94a3b8;min-height:18px;line-height:1.5}
+  .meta{font-size:12px;color:#64748b;letter-spacing:.1em}
+  .meta b{color:#38bdf8}
+  .grid{display:grid;grid-template-columns:repeat(3,66px);grid-template-rows:repeat(3,66px);gap:7px}
+  .cell{width:66px;height:66px;border-radius:10px;background:#1e293b;border:1px solid #334155;display:grid;place-items:center;font-size:30px;font-weight:800;cursor:pointer;transition:transform .12s}
+  .cell:hover{border-color:#38bdf8}
+  .cell.X{color:#38bdf8}
+  .cell.O{color:#f87171}
+  .cell.win{background:#06281c;border-color:#22c55e;animation:pop .4s}
+  .cell.lose{background:#2a0a0e;border-color:#ef4444;animation:pop .4s}
+  @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .area.good{animation:goodflash .5s}
+  .area.bad{animation:badflash .5s}
+  @keyframes goodflash{0%{box-shadow:inset 0 0 0 4px #22c55e;background:#06281c}100%{box-shadow:inset 0 0 0 0 #22c55e}}
+  @keyframes badflash{0%{box-shadow:inset 0 0 0 4px #ef4444;background:#2a0a0e}100%{box-shadow:inset 0 0 0 0 #ef4444}}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>VICTOIRES <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:210px;margin:0 auto"></div></div>
+  <div class="area" id="area">
+    <div class="meta">MANCHE <b id="round">1</b>/5 · <span style="color:#38bdf8">TOI</span> <b id="w">0</b> · <span style="color:#f87171">IA</span> <b id="l">0</b> · NUL <b id="d">0</b></div>
+    <div class="grid" id="grid"></div>
+    <div class="msg" id="msg">Tu joues les X. À toi de commencer.</div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Morpion contre l'IA. 5 manches.</div>
+  <div class="hint">Morpion contre l'IA (X = toi). Aligne 3 pour gagner.<br>5 manches. Objectif : 4 victoires ou plus.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('tictactoeai.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('tictactoeai.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('tictactoeai.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-let b=Array(9).fill(null), wins=0, games=5, over=false;
-function render(){ const g=$('#g'); g.innerHTML=''; b.forEach((v,i)=>{ const d=document.createElement('div'); d.style.cssText='width:64px;height:64px;border-radius:10px;background:#1e293b;border:1px solid #334155;display:grid;place-items:center;font-size:26px;font-weight:800;cursor:pointer'; d.textContent=v||''; d.onclick=()=>move(i); g.appendChild(d); }); }
-function win(p){ const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; return L.some(l=>l.every(i=>b[i]===p)); }
-function move(i){ if(over||b[i]) return; b[i]='X'; if(win('X')){ wins++; $('#score').textContent=wins; return end(); } if(b.every(x=>x)) return end(); render(); setTimeout(ai,250); }
-function ai(){ if(over) return; const e=b.map((v,i)=>v?null:i).filter(x=>x!==null); if(e.length){ b[e[Math.floor(Math.random()*e.length)]]='O'; } if(win('O')) return end(); if(b.every(x=>x)) return end(); render(); }
-function end(){ over=true; render(); games--; if(games<=0){ saveHigh(wins); $('#area').insertAdjacentHTML('beforeend','<div class="big">'+wins+' victoires</div>'); } else { setTimeout(()=>{ b=Array(9).fill(null); over=false; render(); },900); } }
-$('#go').onclick=()=>{ b=Array(9).fill(null); wins=0; games=5; over=false; $('#score').textContent='0'; render(); };
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const CORNERS=[0,2,6,8];
+const area=$('#area'), grid=$('#grid'), msg=$('#msg');
+let b=[], wins=0, losses=0, draws=0, games=5, busy=false, gameOver=false, finished=false;
+function flash(kind){ area.classList.remove('good','bad'); void area.offsetWidth; area.classList.add(kind); }
+function empty(){ return b.map((v,i)=>v?null:i).filter(x=>x!==null); }
+function winner(p){ return LINES.find(l=>l.every(i=>b[i]===p)); }
+function render(winLine){
+  grid.innerHTML='';
+  b.forEach((v,i)=>{
+    const c=document.createElement('div');
+    c.className='cell'+(v==='X'?' X':v==='O'?' O':'');
+    c.textContent=v||'';
+    if(winLine&&winLine.includes(i)) c.classList.add(v==='X'?'win':'lose');
+    c.onclick=()=>move(i);
+    grid.appendChild(c);
+  });
+  $('#round').textContent=6-games;
+  $('#w').textContent=wins; $('#l').textContent=losses; $('#d').textContent=draws;
+}
+function move(i){
+  if(finished||gameOver||busy||b[i]) return;
+  b[i]='X'; Arcade.sfx('click');
+  const w=winner('X');
+  if(w){ wins++; render(w); $('#score').textContent=wins; flash('good'); Arcade.sfx('win'); msg.innerHTML='<b>Tu gagnes la manche !</b>'; endRound(); return; }
+  if(empty().length===0){ draws++; render(); Arcade.sfx('pop'); msg.innerHTML='Égalité.'; endRound(); return; }
+  busy=true; render();
+  msg.textContent='L\'IA réfléchit…';
+  setTimeout(aiMove,450);
+}
+function aiMove(){
+  if(finished) return;
+  const e=empty();
+  if(!e.length) return;
+  let cell=null;
+  const winO = LINES.find(l=>{ const cells=l.filter(i=>b[i]===null); const os=l.filter(i=>b[i]==='O').length; return cells.length===1&&os===2; });
+  if(winO) cell=winO.find(i=>b[i]===null);
+  if(cell===null){
+    const blockX = LINES.find(l=>{ const cells=l.filter(i=>b[i]===null); const xs=l.filter(i=>b[i]==='X').length; return cells.length===1&&xs===2; });
+    if(blockX) cell=blockX.find(i=>b[i]===null);
+  }
+  if(cell===null&&b[4]===null) cell=4;
+  if(cell===null){ const cs=CORNERS.filter(i=>b[i]===null); if(cs.length) cell=cs[Math.floor(Math.random()*cs.length)]; }
+  if(cell===null) cell=e[Math.floor(Math.random()*e.length)];
+  b[cell]='O'; Arcade.sfx('hit');
+  const w=winner('O');
+  if(w){ losses++; render(w); flash('bad'); Arcade.sfx('lose'); msg.innerHTML='<b>L\'IA gagne la manche.</b>'; endRound(); return; }
+  if(empty().length===0){ draws++; render(); Arcade.sfx('pop'); msg.innerHTML='Égalité.'; endRound(); return; }
+  busy=false; render();
+  msg.textContent='À toi de jouer.';
+}
+function endRound(){
+  gameOver=true; busy=false;
+  games--;
+  if(games<=0){
+    finished=true;
+    const rec=wins>best;
+    saveHigh(wins);
+    msg.innerHTML='Partie terminée — <b>'+wins+'</b> victoire'+(wins>1?'s':'')+' sur 5'+(rec?' — RECORD !':'');
+    (rec?Arcade.sfx('win'):Arcade.sfx('lose'));
+    return;
+  }
+  setTimeout(()=>{
+    b=Array(9).fill(null);
+    gameOver=false; busy=false;
+    render();
+    msg.textContent='Nouvelle manche — à toi de jouer.';
+  },1100);
+}
+function reset(){
+  b=Array(9).fill(null);
+  wins=0; losses=0; draws=0; games=5; busy=false; gameOver=false; finished=false;
+  $('#score').textContent='0';
+  area.classList.remove('good','bad');
+  msg.textContent='Tu joues les X. À toi de commencer.';
+  render();
+}
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

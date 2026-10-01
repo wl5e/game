@@ -10,33 +10,101 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .4s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>REBONDS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Garde la balle en l'air en déplaçant la raquette.</div>
+  <div class="hint">Objectif : 30 rebonds. Garde la balle en l'air avec la raquette (◀ ▶ ou glisse le doigt).</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('bounce.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('bounce.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('bounce.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let px=180, bx=200, by=100, vx=2.5, vy=3, bounces=0, alive=true, raf=null;
-function frame(){ bx+=vx; by+=vy; if(bx<8||bx>cv.width-8) vx=-vx; if(by<8) vy=-vy; if(by>cv.height-20){ if(Math.abs(bx-px)<30){ vy=-Math.abs(vy); bounces++; $('#score').textContent=bounces; } else { alive=false; } } if(by>cv.height){ alive=false; } if(!alive){ saveHigh(bounces); cancelAnimationFrame(raf); c.fillStyle='#f87171';c.font='bold 20px monospace';c.textAlign='center';c.fillText(bounces+' rebonds',cv.width/2,cv.height/2); return; } c.clearRect(0,0,cv.width,cv.height); c.fillStyle='#fbbf24';c.beginPath();c.arc(bx,by,8,0,7);c.fill(); c.fillStyle='#38bdf8';c.fillRect(px-28,cv.height-14,56,10); raf=requestAnimationFrame(frame); }
-cv.addEventListener('pointermove',e=>{ const r=cv.getBoundingClientRect(); px=(e.clientX-r.left)*(cv.width/r.width); });
-$('#go').onclick=()=>{ px=180; bx=200; by=100; vx=2.5; vy=3; bounces=0; alive=true; cancelAnimationFrame(raf); $('#score').textContent='0'; frame(); };
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const PW=64, PAR=30;
+let px,b,bounces,keys,running,raf,last,parHit;
+function reset(){
+  px=cv.width/2;
+  b={x:cv.width/2,y:120,vx:2.6,vy:3,r:8};
+  bounces=0; keys={}; running=true; parHit=false; last=0;
+  $('#score').textContent='0';
+  ov.classList.add('hide'); area.classList.remove('shake');
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function endGame(){
+  running=false; cancelAnimationFrame(raf);
+  saveHigh(bounces);
+  area.classList.add('shake'); Arcade.sfx('lose');
+  ov.innerHTML='<div class="t" style="color:#f87171">RATÉ</div><div class="s">'+bounces+' rebonds'+(bounces>=PAR?' · PAR atteint !':'')+'</div>';
+  ov.classList.remove('hide');
+}
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  const v=320*dt;
+  if(keys['ArrowLeft']) px-=v;
+  if(keys['ArrowRight']) px+=v;
+  px=Math.max(PW/2,Math.min(cv.width-PW/2,px));
+  b.x+=b.vx*dt*60; b.y+=b.vy*dt*60;
+  if(b.x<b.r){ b.x=b.r; b.vx=Math.abs(b.vx); Arcade.sfx('jump'); }
+  if(b.x>cv.width-b.r){ b.x=cv.width-b.r; b.vx=-Math.abs(b.vx); Arcade.sfx('jump'); }
+  if(b.y<b.r){ b.y=b.r; b.vy=Math.abs(b.vy); Arcade.sfx('jump'); }
+  const paddleY=cv.height-14;
+  if(b.y+b.r>=paddleY && b.y<paddleY+14 && Math.abs(b.x-px)<=PW/2+b.r*0.7){
+    const off=(b.x-px)/(PW/2);
+    const sp=Math.min(6.6,3+bounces*0.06+Math.abs(b.vx)*0.12);
+    b.vy=-sp;
+    b.vx=off*4.6;
+    b.y=paddleY-b.r;
+    bounces++;
+    $('#score').textContent=bounces;
+    Arcade.sfx('pop');
+    if(!parHit && bounces>=PAR){ parHit=true; Arcade.sfx('win'); }
+  } else if(b.y-b.r>cv.height+12){
+    draw(); endGame(); return;
+  }
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+function draw(){
+  c.clearRect(0,0,cv.width,cv.height);
+  const paddleY=cv.height-14;
+  c.fillStyle='#38bdf8';
+  c.beginPath();
+  const hw=PW/2;
+  c.moveTo(px-hw,paddleY); c.lineTo(px+hw,paddleY); c.lineTo(px+hw-8,paddleY+10); c.lineTo(px-hw+8,paddleY+10); c.closePath(); c.fill();
+  c.fillStyle='#fbbf24'; c.beginPath(); c.arc(b.x,b.y,b.r,0,7); c.fill();
+  c.fillStyle='rgba(251,191,36,.25)'; c.beginPath(); c.arc(b.x,b.y,b.r+5,0,7); c.fill();
+  if(parHit){ c.fillStyle='#4ade80'; c.font='bold 14px monospace'; c.textAlign='center'; c.fillText('PAR 30 !',cv.width/2,30); }
+}
+document.addEventListener('keydown',e=>{ keys[e.key]=true; if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault(); });
+document.addEventListener('keyup',e=>{ keys[e.key]=false; });
+cv.addEventListener('pointermove',e=>{
+  if(!running) return;
+  const r=cv.getBoundingClientRect();
+  px=(e.clientX-r.left)*(cv.width/r.width);
+  px=Math.max(PW/2,Math.min(cv.width-PW/2,px));
+});
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

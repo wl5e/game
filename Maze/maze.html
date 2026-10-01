@@ -10,36 +10,57 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  .padrow{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:6px;justify-content:center;margin:0 auto}
+  .padrow button{width:44px;height:44px;padding:0;font-size:18px;background:#1e293b;border:1px solid #334155;color:#e2e8f0}
+  .padrow button:active{background:#38bdf8;color:#04222a}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>TEMPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="330" height="330"></canvas></div>
+  <div class="area" id="area"><canvas id="cv" width="330" height="330"></canvas><div class="ov hide" id="ov"></div></div>
+  <div class="padrow">
+    <span></span><button id="u">▲</button><span></span>
+    <button id="l">◀</button><button id="r">▶</button>
+    <span></span><button id="d">▼</button><span></span>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Atteins la sortie (en bas à droite) avec les flèches. Plus vite = mieux.</div>
+  <div class="hint">Objectif : atteindre la sortie verte en bas à droite le plus vite possible. Flèches, glissement ou boutons.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('maze.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('maze.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('maze.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(v>0&&v<900&&(best===0||v<best)){best=v;try{localStorage.setItem('maze.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); const N=11; let grid, px=1, py=1, start=0, done=false;
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const N=11;
+let grid,px,py,startT,done,timerId;
 function carve(x,y){ grid[y][x]=0; const dirs=[[2,0],[-2,0],[0,2],[0,-2]].sort(()=>Math.random()-0.5); for(const [dx,dy] of dirs){ const nx=x+dx,ny=y+dy; if(nx>0&&ny>0&&nx<N-1&&ny<N-1&&grid[ny][nx]){ grid[y+dy/2][x+dx/2]=0; carve(nx,ny); } } }
 function gen(){ grid=Array.from({length:N},()=>Array(N).fill(1)); carve(1,1); px=1; py=1; }
-function draw(){ const s=cv.width/N; c.clearRect(0,0,cv.width,cv.height); for(let y=0;y<N;y++) for(let x=0;x<N;x++){ if(grid[y][x]){ c.fillStyle='#1e293b'; c.fillRect(x*s,y*s,s,s); } } c.fillStyle='#4ade80'; c.fillRect((N-2)*s,(N-2)*s,s,s); c.fillStyle='#38bdf8'; c.beginPath(); c.arc(px*s+s/2,py*s+s/2,s*0.35,0,7); c.fill(); if(px===N-2&&py===N-2&&!done){ done=true; const t=Math.round((performance.now()-start)/1000); saveLow(t); $('#score').textContent=t; } }
-function mv(dx,dy){ const nx=px+dx, ny=py+dy; if(nx>=0&&ny>=0&&nx<N&&ny<N&&grid[ny][nx]===0){ px=nx; py=ny; draw(); } }
-document.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')mv(-1,0); if(e.key==='ArrowRight')mv(1,0); if(e.key==='ArrowUp')mv(0,-1); if(e.key==='ArrowDown')mv(0,1); });
-$('#go').onclick=()=>{ gen(); done=false; start=performance.now(); $('#score').textContent='0'; draw(); };
+function elapsed(){ return Math.round((performance.now()-startT)/1000); }
+function win(){ done=true; clearInterval(timerId); const t=elapsed(); saveLow(t); $('#score').textContent=t; Arcade.sfx('win'); ov.innerHTML='<div class="t" style="color:#4ade80">SORTIE !</div><div class="s">Temps : '+t+' s</div>'; ov.classList.remove('hide'); }
+function reset(){ gen(); done=false; startT=performance.now(); $('#score').textContent='0'; ov.classList.add('hide'); clearInterval(timerId); timerId=setInterval(()=>{ if(!done) $('#score').textContent=elapsed(); },200); draw(); }
+function mv(dx,dy){ if(done) return; const nx=px+dx, ny=py+dy; if(nx>=0&&ny>=0&&nx<N&&ny<N&&grid[ny][nx]===0){ px=nx; py=ny; Arcade.sfx('tick'); draw(); if(px===N-2&&py===N-2) win(); } }
+function draw(){ const s=cv.width/N; c.clearRect(0,0,cv.width,cv.height); for(let y=0;y<N;y++) for(let x=0;x<N;x++){ if(grid[y][x]){ c.fillStyle='#1e293b'; c.fillRect(x*s,y*s,s,s); } } const ex=(N-2)*s, ey=(N-2)*s; c.fillStyle='rgba(74,222,128,.22)'; c.fillRect(ex-2,ey-2,s+4,s+4); c.fillStyle='#4ade80'; c.fillRect(ex+3,ey+3,s-6,s-6); c.fillStyle='#38bdf8'; c.beginPath(); c.arc(px*s+s/2,py*s+s/2,s*0.35,0,7); c.fill(); }
+document.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft')mv(-1,0); if(e.key==='ArrowRight')mv(1,0); if(e.key==='ArrowUp')mv(0,-1); if(e.key==='ArrowDown')mv(0,1); if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) e.preventDefault(); });
+let sx=0,sy=0;
+cv.addEventListener('pointerdown',e=>{ const r=cv.getBoundingClientRect(); sx=e.clientX-r.left; sy=e.clientY-r.top; });
+cv.addEventListener('pointerup',e=>{ const r=cv.getBoundingClientRect(); const dx=(e.clientX-r.left)-sx, dy=(e.clientY-r.top)-sy; if(Math.abs(dx)<16&&Math.abs(dy)<16) return; if(Math.abs(dx)>Math.abs(dy)) mv(dx>0?1:-1,0); else mv(0,dy>0?1:-1); });
+$('#u').onclick=()=>mv(0,-1); $('#d').onclick=()=>mv(0,1); $('#l').onclick=()=>mv(-1,0); $('#r').onclick=()=>mv(1,0);
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

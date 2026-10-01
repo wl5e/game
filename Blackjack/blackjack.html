@@ -6,40 +6,191 @@
 <title>Blackjack</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
+  button:disabled{opacity:.4;cursor:default}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 16px;font-size:15px;font-weight:700;margin:4px;cursor:pointer}
   .opt:hover{border-color:#38bdf8}
+  .opt:disabled{opacity:.4;cursor:default}
+  .row{display:flex;gap:10px}
+  .msg{font-size:13px;color:#94a3b8;min-height:18px;line-height:1.5}
+  .hand{min-height:62px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+  .lbl{font-size:10px;letter-spacing:.2em;color:#64748b}
+  .card{width:42px;height:60px;border-radius:8px;background:#f8fafc;color:#0f172a;display:grid;place-items:center;font-size:15px;font-weight:800;box-shadow:0 6px 14px -8px #000;position:relative}
+  .card.red{color:#dc2626}
+  .card.back{background:#1e293b;border:1px solid #334155;color:#64748b;font-size:18px}
+  .card .s{font-size:11px;position:absolute;top:3px;right:5px}
+  .meta{font-size:12px;color:#64748b;letter-spacing:.1em}
+  .meta b{color:#38bdf8}
+  .area.good{animation:goodflash .5s}
+  .area.bad{animation:badflash .5s}
+  @keyframes goodflash{0%{box-shadow:inset 0 0 0 4px #22c55e;background:#06281c}100%{box-shadow:inset 0 0 0 0 #22c55e}}
+  @keyframes badflash{0%{box-shadow:inset 0 0 0 4px #ef4444;background:#2a0a0e}100%{box-shadow:inset 0 0 0 0 #ef4444}}
+  .shake{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+  .pop{animation:pop .35s ease}
+  @keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>SOLDE <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div id="g"></div></div>
+  <div class="hud"><span>SOLDE <b id="score">1000</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="lbl">CROUPIER</div>
+    <div class="hand" id="dealer"></div>
+    <div class="lbl">VOUS</div>
+    <div class="hand" id="player"></div>
+    <div class="meta">MANCHES RESTANTES <b id="left">10</b> · MISE <b>100</b></div>
+    <div class="msg" id="msg">Approche de 21 sans dépasser.</div>
+    <div class="row"><button class="opt" id="hit">PIGER</button><button class="opt" id="stay">RESTER</button></div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">21 sans dépasser. Piger ou Rester. 10 manches.</div>
+  <div class="hint">Approche de 21 sans dépasser. 10 manches à 100 la mise.<br>Blackjack (21 en 2 cartes) paie 3:2. Objectif : solde 1200+.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('blackjack.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('blackjack.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('blackjack.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-let bal=1000, rounds=10, hand=[], total=0, playing=true;
-function drawCard(){ return 1+Math.floor(Math.random()*10); }
-function render(){ const h=hand.join(' + ')+' = '+total; $('#g').innerHTML='<div class="big">'+h+'</div><div class="big" id="bal">'+bal+'</div><div style="margin-top:10px"><button class="opt" id="hit">PIGER</button><button class="opt" id="stay">RESTER</button></div>'; $('#hit').onclick=hit; $('#stay').onclick=stay; }
-function hit(){ if(!playing) return; hand.push(drawCard()); total=hand.reduce((a,b)=>a+b,0); if(total>21){ end(-100); } else render(); }
-function stay(){ if(!playing) return; const dealer=17+Math.floor(Math.random()*6); end(total>dealer?100:-100); }
-function end(delta){ playing=false; bal+=delta; rounds--; $('#g').innerHTML='<div class="big">'+(delta>0?'GAGNÉ':'PERDU')+' '+Math.abs(delta)+'</div><div class="big">Solde '+bal+'</div>'; if(rounds===0){ saveHigh(bal); $('#score').textContent=bal; } }
-$('#go').onclick=()=>{ bal=1000; rounds=10; hand=[]; total=0; playing=true; hand.push(drawCard(),drawCard()); total=hand.reduce((a,b)=>a+b,0); $('#score').textContent='0'; render(); };
+const SUITS=['♠','♥','♦','♣'];
+const RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+function valueOf(r){ if(r==='A')return 11; if(r==='K'||r==='Q'||r==='J'||r==='10')return 10; return parseInt(r,10); }
+function isRed(s){ return s==='♥'||s==='♦'; }
+let deck=[];
+function freshDeck(){ deck=[]; for(const s of SUITS) for(const r of RANKS) deck.push({r,s}); for(let i=deck.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [deck[i],deck[j]]=[deck[j],deck[i]]; } }
+function draw(){ if(deck.length<15) freshDeck(); return deck.pop(); }
+function handVal(hand){ let t=0,a=0; for(const c of hand){ t+=valueOf(c.r); if(c.r==='A')a++; } while(t>21&&a>0){ t-=10; a--; } return t; }
+const area=$('#area'), msg=$('#msg');
+const dealerEl=$('#dealer'), playerEl=$('#player');
+const btnHit=$('#hit'), btnStay=$('#stay');
+let bal=1000, rounds=10, player=[], dealer=[], phase='idle', over=false;
+function flash(kind){ area.classList.remove('good','bad'); void area.offsetWidth; area.classList.add(kind); }
+function paint(){ $('#score').textContent=bal; $('#left').textContent=rounds; }
+function cardHTML(c,faceDown){
+  if(faceDown) return '<div class="card back">?</div>';
+  const red=isRed(c.s)?' red':'';
+  return '<div class="card'+red+'">'+c.r+'<span class="s">'+c.s+'</span></div>';
+}
+function render(){
+  dealerEl.innerHTML=dealer.map((c,i)=>cardHTML(c, (phase==='player'&&i===1))).join('');
+  playerEl.innerHTML=player.map(c=>cardHTML(c,false)).join('');
+}
+function setButtons(on){
+  btnHit.disabled=!on; btnStay.disabled=!on;
+}
+function startRound(){
+  if(over) return;
+  if(rounds<=0||bal<100){ endGame(); return; }
+  rounds--; bal-=100;
+  player=[draw(),draw()]; dealer=[draw(),draw()];
+  phase='player';
+  msg.textContent='À toi de jouer. Pige ou reste.';
+  area.classList.remove('good','bad');
+  setButtons(true);
+  render(); paint();
+  Arcade.sfx('tick');
+  if(handVal(player)===21){ setTimeout(()=>resolve(),350); setButtons(false); }
+}
+function hit(){
+  if(phase!=='player'||over) return;
+  player.push(draw());
+  render(); Arcade.sfx('hit');
+  const t=handVal(player);
+  if(t>21){
+    phase='dealer';
+    msg.textContent='Dépassé ('+t+') — tu perds.';
+    setButtons(false);
+    flash('bad'); Arcade.sfx('wrong');
+    setTimeout(resolve,700);
+  }else if(t===21){
+    phase='dealer';
+    msg.textContent='21 !';
+    setButtons(false);
+    setTimeout(resolve,400);
+  }
+}
+function stay(){
+  if(phase!=='player'||over) return;
+  phase='dealer';
+  msg.textContent='Le croupier joue…';
+  setButtons(false);
+  Arcade.sfx('click');
+  dealerStep();
+}
+function dealerStep(){
+  render();
+  if(handVal(dealer)<17){
+    dealer.push(draw());
+    Arcade.sfx('tick');
+    setTimeout(dealerStep,450);
+  }else{
+    setTimeout(resolve,400);
+  }
+}
+function resolve(){
+  const pt=handVal(player), dt=handVal(dealer);
+  render();
+  const pNatural = pt===21 && player.length===2;
+  const dNatural = dt===21 && dealer.length===2;
+  let delta=0, res;
+  if(pt>21){ res='BUST'; }
+  else if(pNatural && !dNatural){ res='WIN'; }
+  else if(dt>21){ res='WIN'; }
+  else if(pt>dt){ res='WIN'; }
+  else if(pt<dt){ res='LOSE'; }
+  else { res='PUSH'; }
+  const natural = pNatural && !dNatural;
+  if(res==='WIN'){ delta = natural?250:200; bal+=delta; }
+  else if(res==='PUSH'){ bal+=100; }
+  phase='between';
+  if(res==='WIN'){
+    msg.innerHTML=(natural?'BLACKJACK ! +150':'Gagné ! +100')+' Solde '+bal;
+    flash('good'); Arcade.sfx('win');
+  }else if(res==='PUSH'){
+    msg.innerHTML='Égalité — mise rendue. Solde '+bal;
+    Arcade.sfx('coin');
+  }else{
+    msg.innerHTML=(res==='BUST'?'Dépassé':'Le croupier gagne')+' −100. Solde '+bal;
+    area.classList.add('shake'); flash('bad'); Arcade.sfx('lose');
+    setTimeout(()=>area.classList.remove('shake'),500);
+  }
+  paint();
+  btnHit.disabled=false; btnHit.textContent='SUIVANT';
+  btnStay.disabled=true;
+}
+function endGame(){
+  over=true;
+  const rec=bal>best;
+  saveHigh(bal);
+  msg.innerHTML='Partie terminée — Solde <b>'+bal+'</b>'+(rec?' — RECORD !':'');
+  btnHit.disabled=true; btnStay.disabled=true;
+  (rec?Arcade.sfx('win'):Arcade.sfx('lose'));
+}
+btnHit.onclick=function(){
+  if(phase==='player'){ hit(); }
+  else if(phase==='between'){ startRound(); btnHit.textContent='PIGER'; }
+};
+btnStay.onclick=stay;
+function reset(){
+  bal=1000; rounds=10; over=false; phase='idle';
+  freshDeck();
+  msg.textContent='Approche de 21 sans dépasser.';
+  area.classList.remove('good','bad','shake');
+  btnHit.textContent='PIGER'; btnStay.textContent='RESTER';
+  paint();
+  startRound();
+}
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

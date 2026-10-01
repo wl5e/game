@@ -6,37 +6,142 @@
 <title>Balance</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent;user-select:none}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
-  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
-  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
-  button:active{transform:translateY(1px)}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;font-weight:700;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;overflow:hidden;position:relative;touch-action:manipulation}
+  canvas{display:block;width:100%;height:auto}
+  .ctrls{display:flex;gap:12px;width:100%}
+  .tilt{flex:1;font-family:inherit;border:1px solid #334155;border-radius:12px;padding:16px;font-size:18px;font-weight:800;background:#1e293b;color:#e2e8f0;cursor:pointer;touch-action:manipulation}
+  .tilt:active{background:#132a3d;border-color:#38bdf8}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer;letter-spacing:.03em;touch-action:manipulation}
+  button:active{transform:translateY(1px) scale(.98)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>TEMPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="hud"><span>TEMPS <b id="score">0.0s</b></span><span>BEST <b id="best">—</b></span></div>
   <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="ctrls">
+    <button class="tilt" id="l">◀</button>
+    <button class="tilt" id="r">▶</button>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Garde la balle en équilibre avec ◀ ▶.</div>
+  <div class="hint">Garde la balle sur la planche avec ◀ ▶ (ou les flèches).<br>Ne la laisse pas tomber — objectif : 20 secondes.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
-let best=0;try{best=parseInt(localStorage.getItem('balance.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('balance.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('balance.best',String(v))}catch(e){}} upd(); }
-function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let bx=210, vx=0, tilt=0, t=0, alive=true, raf=null;
-function frame(){ tilt*=0.95; if(keys['ArrowLeft']) tilt-=0.4; if(keys['ArrowRight']) tilt+=0.4; vx+=tilt; bx+=vx; if(bx<12||bx>cv.width-12){ alive=false; } if(!alive){ const s=Math.floor(t/30); saveHigh(s); cancelAnimationFrame(raf); c.fillStyle='#f87171';c.font='bold 20px monospace';c.textAlign='center';c.fillText(s+' s',cv.width/2,cv.height/2); return; } t++; c.clearRect(0,0,cv.width,cv.height); c.fillStyle='#64748b'; c.fillRect(0,150,cv.width,6); c.strokeStyle='#94a3b8'; c.lineWidth=4; c.beginPath(); c.moveTo(210,150); c.lineTo(210+tilt*30,150-20); c.stroke(); c.fillStyle='#fbbf24'; c.beginPath(); c.arc(bx,100,12,0,7); c.fill(); $('#score').textContent=Math.floor(t/30); raf=requestAnimationFrame(frame); }
-let keys={}; document.addEventListener('keydown',e=>keys[e.key]=true); document.addEventListener('keyup',e=>keys[e.key]=false);
-$('#go').onclick=()=>{ bx=210; vx=0; tilt=0; t=0; alive=true; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); };
-upd();
+const sfx=n=>{ try{ if(window.Arcade) window.Arcade.sfx(n); }catch(e){} };
+const KEY='balance.best', PAR=20;
+let best=0; try{ best=parseInt(localStorage.getItem(KEY)||'0',10)||0; }catch(e){}
+function upd(){ $('#best').textContent=best?best+'s':'—'; }
+function save(v){ if(v>best){ best=v; try{ localStorage.setItem('balance.best',String(v)); }catch(e){} } upd(); }
+
+const cv=$('#cv'), c=cv.getContext('2d');
+const W=cv.width, H=cv.height, PIVOT={x:W/2,y:150}, BALL_R=11, LEN=W/2-16, SMAX=LEN-BALL_R, MAX_ANG=0.34;
+const scoreEl=$('#score');
+let s=0, v=0, angle=0;
+let state='idle', raf=null, startAt=0, lastT=0, lastMile=0;
+const keys={}; let holdL=false, holdR=false, touchL=false, touchR=false;
+
+function computeTarget(){
+  let t=0;
+  if(keys['ArrowRight']) t+=1;
+  if(keys['ArrowLeft']) t-=1;
+  if(holdR) t+=1;
+  if(holdL) t-=1;
+  if(touchR) t+=1;
+  if(touchL) t-=1;
+  return Math.max(-1,Math.min(1,t));
+}
+function start(){
+  state='go'; cancelAnimationFrame(raf);
+  s=0; v=0; angle=0; lastMile=0;
+  holdL=holdR=touchL=touchR=false;
+  startAt=performance.now(); lastT=startAt;
+  scoreEl.textContent='0.0s';
+  raf=requestAnimationFrame(loop);
+}
+function lose(){
+  state='end'; cancelAnimationFrame(raf);
+  const secs=Math.floor((performance.now()-startAt)/1000);
+  save(secs);
+  draw();
+  c.fillStyle='rgba(7,11,18,.84)'; c.fillRect(0,0,W,H);
+  c.textAlign='center';
+  c.fillStyle='#f87171'; c.font='bold 28px monospace';
+  c.fillText('GAME OVER', W/2, H/2-10);
+  c.fillStyle='#cbd5e1'; c.font='13px monospace';
+  c.fillText((secs===best&&secs>0)?'Nouveau record ! '+secs+' s':('Best : '+(best?best+' s':'—')), W/2, H/2+16);
+  sfx('lose');
+}
+function loop(now){
+  if(state!=='go') return;
+  const dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+  const tSec=(now-startAt)/1000;
+  // ease the plank angle toward the input
+  const want=computeTarget()*MAX_ANG;
+  angle+=(want-angle)*Math.min(1,dt*12);
+  // ball physics along the plank (difficulty ramps up over time)
+  const accel=260*(1+Math.min(0.8,tSec*0.02));
+  v+=Math.sin(angle)*accel*dt;
+  v*=Math.exp(-0.85*dt);
+  s+=v*dt;
+  if(s<-SMAX || s>SMAX){ lose(); return; }
+  const secs=Math.floor(tSec);
+  if(secs>lastMile && secs%10===0){ lastMile=secs; sfx('coin'); }
+  scoreEl.textContent=tSec.toFixed(1)+'s';
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+function draw(){
+  c.clearRect(0,0,W,H);
+  c.fillStyle='#0b1220'; c.fillRect(0,0,W,H);
+  c.save();
+  c.translate(PIVOT.x,PIVOT.y);
+  c.rotate(angle);
+  c.strokeStyle='#64748b'; c.lineWidth=10; c.lineCap='round';
+  c.beginPath(); c.moveTo(-LEN,0); c.lineTo(LEN,0); c.stroke();
+  c.strokeStyle='#38bdf8'; c.lineWidth=10;
+  c.beginPath(); c.moveTo(-LEN,0); c.lineTo(LEN,0); c.stroke();
+  c.restore();
+  c.fillStyle='#e0f2fe';
+  c.beginPath(); c.arc(PIVOT.x,PIVOT.y,5,0,Math.PI*2); c.fill();
+  const bx=PIVOT.x+s*Math.cos(angle);
+  const by=PIVOT.y+s*Math.sin(angle)-BALL_R-5;
+  c.fillStyle='#fbbf24';
+  c.beginPath(); c.arc(bx,by,BALL_R,0,Math.PI*2); c.fill();
+  c.fillStyle='rgba(255,255,255,.55)';
+  c.beginPath(); c.arc(bx-3,by-3,3,0,Math.PI*2); c.fill();
+  if(Math.abs(s)>SMAX*0.7){ c.fillStyle='rgba(239,68,68,.55)'; c.font='bold 12px monospace'; c.textAlign=s<0?'left':'right'; c.fillText('!', s<0?6:W-12, 30); }
+  c.textAlign='center'; c.fillStyle='#64748b'; c.font='bold 11px monospace';
+  c.fillText('garde la balle en équilibre', W/2, 14);
+}
+// input
+window.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'||e.key==='ArrowRight'){ e.preventDefault(); } keys[e.key]=true; });
+window.addEventListener('keyup',e=>{ keys[e.key]=false; });
+function bindHold(el,side){
+  el.addEventListener('pointerdown',e=>{ e.preventDefault(); if(side==='L') holdL=true; else holdR=true; });
+  el.addEventListener('pointerup',e=>{ e.preventDefault(); if(side==='L') holdL=false; else holdR=false; });
+  el.addEventListener('pointerleave',()=>{ if(side==='L') holdL=false; else holdR=false; });
+  el.addEventListener('pointercancel',()=>{ if(side==='L') holdL=false; else holdR=false; });
+}
+bindHold($('#l'),'L'); bindHold($('#r'),'R');
+cv.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(state!=='go') return;
+  const rct=cv.getBoundingClientRect();
+  const x=(e.clientX-rct.left)/rct.width;
+  if(x<0.5) touchL=true; else touchR=true;
+});
+cv.addEventListener('pointerup',()=>{ touchL=touchR=false; });
+cv.addEventListener('pointerleave',()=>{ touchL=touchR=false; });
+$('#go').addEventListener('click',start);
+start(); upd();
 </script>
 </body>
 </html>

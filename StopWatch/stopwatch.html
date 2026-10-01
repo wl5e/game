@@ -6,37 +6,93 @@
 <title>Stopwatch</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent;user-select:none}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
-  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
-  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
-  button:active{transform:translateY(1px)}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;font-weight:700;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:230px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;text-align:center;position:relative;overflow:hidden;touch-action:manipulation;transition:background .15s,border-color .15s}
+  .area.good{background:#0b2316;border-color:#22c55e}
+  .area.bad{background:#2a0f14;border-color:#ef4444;animation:shake .35s}
+  .big{font-size:44px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .small{color:#64748b;font-size:13px;line-height:1.6}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer;letter-spacing:.03em;touch-action:manipulation}
+  button:active{transform:translateY(1px) scale(.98)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .bar{width:100%;height:8px;border-radius:99px;background:#1e293b;overflow:hidden}
+  .fill{height:100%;width:100%;background:#38bdf8;border-radius:99px}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>ÉCART <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="big">0.000</div></div>
+  <div class="hud"><span>ÉCART <b id="score">—</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="big" id="big">0.000</div>
+    <div class="small" id="sub">Tape pour démarrer le chrono.</div>
+    <div class="bar"><div class="fill" id="fill"></div></div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Arrête le chrono au plus près de 10.000 s. Clique pour arrêter.</div>
+  <div class="hint">Arrête le chrono au plus près de <b>10.000 s</b>.<br>1er tape = départ · 2e tape = arrêt. Moins d'écart = mieux.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
-let best=0;try{best=parseInt(localStorage.getItem('stopwatch.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('stopwatch.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('stopwatch.best',String(v))}catch(e){}} upd(); }
-function upd(){ $('#best').textContent=best?best:'—'; }
-let start=0, running=false, raf=null;
-function loop(){ if(running){ $('#big').textContent=((performance.now()-start)/1000).toFixed(3); raf=requestAnimationFrame(loop); } }
-$('#area').onclick=()=>{ if(!running){ running=true; start=performance.now(); loop(); } else { running=false; cancelAnimationFrame(raf); const err=Math.round(Math.abs((performance.now()-start)-10000)); saveLow(err); $('#score').textContent=err; $('#big').textContent=((performance.now()-start)/1000).toFixed(3)+' s'; } };
-$('#go').onclick=()=>{ running=false; cancelAnimationFrame(raf); $('#big').textContent='0.000'; $('#score').textContent='0'; };
-upd();
+const sfx=n=>{ try{ if(window.Arcade) window.Arcade.sfx(n); }catch(e){} };
+const KEY='stopwatch.best', TARGET=10000, CAP=15000;
+let best=0; try{ best=parseInt(localStorage.getItem(KEY)||'0',10)||0; }catch(e){}
+function upd(){ $('#best').textContent=best?best+' ms':'—'; }
+function save(v){ if(v>0 && v<900 && (best===0 || v<best)){ best=v; try{ localStorage.setItem('stopwatch.best',String(v)); }catch(e){} } upd(); }
+
+const area=$('#area'), big=$('#big'), sub=$('#sub'), fill=$('#fill'), scoreEl=$('#score');
+let running=false, startAt=0, raf=null, lastWhole=0;
+
+function resetUI(){
+  running=false; cancelAnimationFrame(raf);
+  big.textContent='0.000'; sub.textContent='Tape pour démarrer le chrono.';
+  fill.style.width='100%'; scoreEl.textContent='—';
+  area.classList.remove('good','bad'); big.style.color='#cbd5e1';
+}
+function start(){
+  running=true; startAt=performance.now(); lastWhole=0;
+  scoreEl.textContent='—'; big.textContent='0.000';
+  sub.textContent='En cours… tape pour arrêter';
+  sfx('whoosh'); loop();
+}
+function loop(){
+  if(!running) return;
+  const now=performance.now();
+  const t=(now-startAt)/1000;
+  big.textContent=t.toFixed(3);
+  fill.style.width=Math.max(0,Math.min(1,1-t/10)*100)+'%';
+  if(t>=9 && t<=11) big.style.color='#4ade80'; else big.style.color='#cbd5e1';
+  if(Math.floor(t)>lastWhole){ lastWhole=Math.floor(t); sfx('tick'); }
+  if(t*1000>=CAP){ stop(true); return; }
+  raf=requestAnimationFrame(loop);
+}
+function stop(auto){
+  if(!running) return;
+  running=false; cancelAnimationFrame(raf);
+  const t=(performance.now()-startAt)/1000;
+  const err=Math.round(Math.abs(t*1000-TARGET));
+  scoreEl.textContent=err;
+  big.textContent=t.toFixed(3)+' s';
+  big.style.color='#cbd5e1';
+  const early=t<TARGET/1000;
+  if(err===0){ sub.textContent='PARFAIT ! Exactement 10.000 s'; }
+  else sub.textContent=(auto?'Temps écoulé — ':'')+'Écart '+err+' ms ('+(early?'trop tôt':'trop tard')+')';
+  let cls, s;
+  if(err<100){ cls='good'; s='win'; }
+  else if(err<300){ cls='good'; s='correct'; }
+  else { cls='bad'; s='wrong'; }
+  area.classList.add(cls); setTimeout(()=>area.classList.remove(cls),400);
+  sfx(s);
+  save(err);
+}
+area.addEventListener('pointerdown',e=>{ e.preventDefault(); running?stop(false):start(); });
+window.addEventListener('keydown',e=>{ if(e.code==='Space'||e.code==='Enter'){ e.preventDefault(); running?stop(false):start(); } });
+$('#go').addEventListener('click',resetUI);
+resetUI(); upd();
 </script>
 </body>
 </html>

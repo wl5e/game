@@ -1,44 +1,117 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>8 Puzzle</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:280px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button.big{width:100%}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  #g{position:relative;width:236px;height:236px}
+  .slot{position:absolute;left:0;top:0;width:72px;height:72px;border-radius:12px;background:#111c2c;border:1px solid #1a2738}
+  .tile{position:absolute;left:0;top:0;width:72px;height:72px;border-radius:12px;background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:24px;font-weight:800;display:grid;place-items:center;cursor:pointer;transition:transform .15s ease,background .12s}
+  .tile:hover{border-color:#38bdf8}
+  .tile:active{background:#0e7490}
+  .tile.last{background:#0e7490;border-color:#22d3ee}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(7,11,18,.9);z-index:5;text-align:center}
+  .overlay .t{font-size:26px;font-weight:800;color:#4ade80}
+  .overlay .s{color:#94a3b8;margin-top:10px;font-size:13px;line-height:1.6}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
   <div class="hud"><span>COUPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px"></div></div>
-  <button id="go">Rejouer</button>
-  <div class="hint">Range les cases de 1 à 8. Moins de coups = mieux.</div>
+  <div class="area" id="area"><div id="g"></div></div>
+  <button class="big" id="go">Rejouer</button>
+  <div class="hint">Range les cases de <b>1 à 8</b> en glissant une case voisine dans la case vide. Moins de coups = mieux. · Par 25</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('eightpuzzle.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('eightpuzzle.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('eightpuzzle.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
+function saveLow(v){ if(best===0||v<best){ best=v; try{localStorage.setItem('eightpuzzle.best',String(v))}catch(e){} upd(); } }
+
+const SIZE=72, GAP=10, STEP=SIZE+GAP;
 let board=[], empty=8, moves=0, solved=false;
+
 function nb(i){ const r=Math.floor(i/3),c=i%3,o=[]; [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{const rr=r+dr,cc=c+dc;if(rr>=0&&rr<3&&cc>=0&&cc<3)o.push(rr*3+cc)}); return o; }
-function render(){ const g=$('#g'); g.innerHTML=''; for(let i=0;i<9;i++){ const d=document.createElement('div'); d.style.cssText='width:56px;height:56px;border-radius:10px;background:'+(board[i]===0?'transparent':'#1e293b')+';border:1px solid #334155;display:grid;place-items:center;font-size:20px;font-weight:800;cursor:pointer'; d.textContent=board[i]||''; if(board[i]!==0) d.onclick=()=>mv(i); g.appendChild(d); } }
-function win(){ for(let i=0;i<8;i++) if(board[i]!==i+1) return false; return true; }
-function mv(i){ if(solved||!nb(i).includes(empty)) return; board[empty]=board[i]; board[i]=0; empty=i; moves++; render(); if(win()){ solved=true; saveLow(moves); $('#score').textContent=moves; } }
-$('#go').onclick=()=>{ board=[1,2,3,4,5,6,7,8,0]; empty=8; moves=0; solved=false; for(let k=0;k<300;k++){ const o=nb(empty); const i=o[Math.floor(Math.random()*o.length)]; board[empty]=board[i]; board[i]=0; empty=i; } $('#score').textContent='0'; render(); };
+function isSolved(){ for(let i=0;i<8;i++) if(board[i]!==i+1) return false; return board[8]===0; }
+
+function render(){
+  const g=$('#g'); g.innerHTML='';
+  for(let i=0;i<9;i++){
+    const s=document.createElement('div'); s.className='slot';
+    s.style.transform='translate('+(i%3)*STEP+'px,'+Math.floor(i/3)*STEP+'px)';
+    g.appendChild(s);
+  }
+  for(let n=1;n<=8;n++){
+    const i=board.indexOf(n);
+    const t=document.createElement('div'); t.className='tile';
+    t.textContent=n;
+    t.style.transform='translate('+(i%3)*STEP+'px,'+Math.floor(i/3)*STEP+'px)';
+    if(n===8) t.classList.add('last');
+    if(!solved) t.onclick=()=>mv(n);
+    g.appendChild(t);
+  }
+}
+
+function mv(n){
+  if(solved) return;
+  const i=board.indexOf(n);
+  if(!nb(i).includes(empty)) { Arcade.sfx('wrong'); return; }
+  board[empty]=n; board[i]=0; empty=i;
+  moves++; $('#score').textContent=moves;
+  Arcade.sfx('tick');
+  render();
+  if(isSolved()){ win(); }
+}
+
+function win(){
+  solved=true;
+  Arcade.sfx('win');
+  saveLow(moves);
+  showOver('Résolu !', moves+' coups'+(moves<=best?' · nouveau record !':' · record '+best));
+}
+
+function showOver(t,s){
+  const ov=document.createElement('div'); ov.className='overlay'; ov.innerHTML='<div><div class="t">'+t+'</div><div class="s">'+s+'</div></div>';
+  $('#area').appendChild(ov);
+}
+
+function scramble(){
+  board=[1,2,3,4,5,6,7,8,0]; empty=8;
+  let guard=0;
+  do{
+    for(let k=0;k<160;k++){
+      const o=nb(empty);
+      const i=o[Math.floor(Math.random()*o.length)];
+      board[empty]=board[i]; board[i]=0; empty=i;
+    }
+    guard++;
+  } while(isSolved() && guard<20);
+}
+
+function reset(){
+  moves=0; solved=false;
+  scramble();
+  $('#score').textContent='0';
+  const ov=$('.overlay'); if(ov) ov.remove();
+  render();
+  upd();
+}
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

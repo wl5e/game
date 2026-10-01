@@ -10,34 +10,102 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .shake{animation:shake .4s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>Cibles <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="hud"><span>CIBLES <b id="score">0</b></span><span>TEMPS <b id="time">30</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Clique les cibles qui apparaissent. 30 s.</div>
+  <div class="hint">Touche le plus de cibles en 30 s. Elles rétrécissent avant de disparaître !</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('shooter.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('shooter.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('shooter.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let targets=[], score=0, t=30000, raf=null;
-function spawn(){ if(targets.length<3 && Math.random()<0.03) targets.push({x:30+Math.random()*(cv.width-60),y:30+Math.random()*(cv.height-60),r:16,life:120}); }
-function frame(){ spawn(); targets.forEach(x=>x.life--); targets=targets.filter(x=>x.life>0); c.clearRect(0,0,cv.width,cv.height); targets.forEach(x=>{ c.fillStyle='#f87171'; c.beginPath(); c.arc(x.x,x.y,x.r,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(x.x,x.y,x.r*0.5,0,7); c.fill(); }); raf=requestAnimationFrame(frame); }
-cv.onclick=e=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height); for(let i=targets.length-1;i>=0;i--){ const q=targets[i]; if((x-q.x)**2+(y-q.y)**2 < q.r*q.r){ targets.splice(i,1); score++; $('#score').textContent=score; break; } } };
-$('#go').onclick=()=>{ targets=[]; score=0; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); setTimeout(()=>{ cancelAnimationFrame(raf); saveHigh(score); },t); };
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const DUR=30;
+let targets,score,t0,running,raf,last;
+function reset(){
+  targets=[]; score=0; running=true;
+  t0=performance.now(); last=0;
+  $('#score').textContent='0'; $('#time').textContent=DUR;
+  ov.classList.add('hide'); area.classList.remove('shake');
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function spawn(){
+  const r=15+Math.random()*8;
+  targets.push({x:30+Math.random()*(cv.width-60),y:30+Math.random()*(cv.height-60),r,life:110+Math.random()*40,max:150,gold:Math.random()<0.15});
+}
+function endGame(){
+  running=false; cancelAnimationFrame(raf);
+  saveHigh(score);
+  Arcade.sfx('win');
+  ov.innerHTML='<div class="t">TEMPS ÉCOULÉ</div><div class="s">Cibles touchées : '+score+'</div>';
+  ov.classList.remove('hide');
+}
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  const el=(ts-t0)/1000;
+  const rem=Math.max(0,DUR-el);
+  $('#time').textContent=Math.ceil(rem);
+  if(rem<=0){ draw(el); endGame(); return; }
+  if(targets.length<3 && Math.random()<0.04+el*0.0008) spawn();
+  for(const t of targets) t.life-=dt*60;
+  targets=targets.filter(t=>t.life>0);
+  draw(el);
+  raf=requestAnimationFrame(loop);
+}
+function draw(el){
+  c.clearRect(0,0,cv.width,cv.height);
+  for(const t of targets){
+    const k=Math.max(0.15,t.life/t.max);
+    const rr=t.r*k;
+    const col=t.gold?'#fbbf24':'#f87171';
+    c.fillStyle=col; c.beginPath(); c.arc(t.x,t.y,rr,0,7); c.fill();
+    c.fillStyle='#fff'; c.beginPath(); c.arc(t.x,t.y,rr*0.45,0,7); c.fill();
+    c.fillStyle=col; c.beginPath(); c.arc(t.x,t.y,rr*0.18,0,7); c.fill();
+    c.strokeStyle='rgba(255,255,255,.35)'; c.lineWidth=1.5;
+    c.beginPath(); c.arc(t.x,t.y,rr+3,0,7); c.stroke();
+  }
+  c.fillStyle='#64748b'; c.font='bold 12px monospace'; c.textAlign='left'; c.fillText(Math.ceil(Math.max(0,DUR-el))+'s',10,16);
+}
+cv.addEventListener('pointerdown',e=>{
+  if(!running) return;
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height);
+  for(let i=targets.length-1;i>=0;i--){
+    const t=targets[i];
+    const rr=t.r*Math.max(0.15,t.life/t.max);
+    if((x-t.x)**2+(y-t.y)**2 < (rr+4)*(rr+4)){
+      const gain=t.gold?2:1;
+      score+=gain; $('#score').textContent=score;
+      targets.splice(i,1);
+      Arcade.sfx(t.gold?'coin':'hit');
+      area.classList.remove('shake'); void area.offsetWidth; area.classList.add('shake');
+      return;
+    }
+  }
+  Arcade.sfx('click');
+});
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

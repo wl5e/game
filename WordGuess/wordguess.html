@@ -10,33 +10,71 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none;padding:20px;min-height:230px;text-align:center;gap:12px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .clue{color:#cbd5e1;font-size:15px;line-height:1.4;max-width:320px}
+  .letters{font-size:26px;font-weight:800;letter-spacing:.18em;color:#38bdf8}
+  .meta{color:#64748b;font-size:11px;letter-spacing:.12em}
+  .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  input{background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:9px;font-size:18px;text-align:center;width:170px;font-family:inherit;outline:none;text-transform:uppercase}
+  input:focus{border-color:#38bdf8}
+  .ghost{background:#1e293b;border:1px solid #334155;color:#e2e8f0}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.9);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
+  @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.1)}100%{transform:scale(1)}}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .good{color:#4ade80!important;animation:pop .25s}
+  .bad{color:#f87171!important;animation:shake .3s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>TROUVÉS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="hint">Animal qui miaule</div><input id="in" maxlength="12" style="background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px;font-size:18px;text-align:center;width:160px" placeholder="?"></div>
+  <div class="hud"><span>TROUVÉS <b id="score">0</b></span><span>TEMPS <b id="time">60</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="clue" id="hint">Animal qui miaule</div>
+    <div class="letters" id="letters">_ _ _ _</div>
+    <div class="meta" id="meta">4 lettres</div>
+    <input id="in" maxlength="20" placeholder="?" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false">
+    <div class="row"><button id="ok">OK</button><button class="ghost" id="skip">Passer</button></div>
+    <div class="ov hide" id="ov"></div>
+  </div>
   <button id="go">Rejouer</button>
-  <div class="hint">Devine le mot à partir de l'indice. 60 s.</div>
+  <div class="hint">Objectif : 12 mots en 60 s. Devine le mot d'après l'indice (une lettre se révèle à chaque erreur).</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('wordguess.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('wordguess.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('wordguess.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const Q=[['CHAT','Animal qui miaule'],['CHIEN','Meilleur ami de l\'homme'],['LUNE','Satellite de la Terre'],['POMME','Fruit qui croque'],['POISSON','Il nage dans l\'eau'],['SOLEIL','Étoile qui nous éclaire'],['FLEUR','Elle pousse au printemps'],['NEIGE','Elle tombe en hiver']]; let score=0, cur='', t=60000;
-function q(){ const p=Q[Math.floor(Math.random()*Q.length)]; cur=p[0]; $('#hint').textContent=p[1]; }
-$('#in').onkeydown=e=>{ if(e.key==='Enter'){ if($('#in').value.toUpperCase()===cur){ score++; $('#score').textContent=score; $('#in').value=''; q(); } } };
-$('#go').onclick=()=>{ score=0; $('#score').textContent='0'; $('#in').value=''; q(); setTimeout(()=>{ saveHigh(score); },t); };
+const Q=[
+ ['CHAT','Animal qui miaule'],['CHIEN',"Meilleur ami de l'homme"],['LUNE','Satellite de la Terre'],
+ ['POMME','Fruit qui croque'],['POISSON',"Il nage dans l'eau"],['SOLEIL','Étoile qui nous éclaire'],
+ ['FLEUR','Elle pousse au printemps'],['NEIGE','Elle tombe en hiver'],['MAISON','On y habite'],
+ ['VOITURE','Quatre roues et un volant'],['BANANE','Fruit jaune et courbé'],['HORLOGE',"Elle donne l'heure"],
+ ['CRAYON','Il écrit sur le papier'],['FENETRE','On regarde au travers'],['JARDIN','On y plante des fleurs'],
+ ['ORDINATEUR','Machine à calculer et naviguer'],['CHAPEAU',"Il se porte sur la tête"],['MONTAGNE',"Plus haute qu'une colline"],
+ ['RIVIERE','Elle coule vers la mer'],['FROMAGE','La Suisse en produit beaucoup']
+];
+const DUR=60;
+let score,cur,revealed,lastQ,t0,timerId,running;
+function render(){ const n=cur.length; let s=''; for(let i=0;i<n;i++){ s+=(i<revealed?cur[i]:'_')+' '; } $('#letters').textContent=s.trim(); $('#meta').textContent=n+' lettre'+(n>1?'s':''); }
+function newQ(){ let i; do{ i=Math.floor(Math.random()*Q.length); }while(i===lastQ); lastQ=i; cur=Q[i][0]; revealed=0; $('#hint').textContent=Q[i][1]; $('#in').value=''; $('#letters').classList.remove('good','bad'); render(); }
+function endGame(){ running=false; clearInterval(timerId); saveHigh(score); $('#in').disabled=true; $('#ok').disabled=true; $('#skip').disabled=true; Arcade.sfx('win'); $('#ov').innerHTML='<div class="t">TEMPS ÉCOULÉ</div><div class="s">Mots trouvés : '+score+'</div>'; $('#ov').classList.remove('hide'); }
+function reset(){ score=0; running=true; lastQ=-1; $('#score').textContent='0'; $('#time').textContent=DUR; $('#in').disabled=false; $('#ok').disabled=false; $('#skip').disabled=false; t0=performance.now(); $('#ov').classList.add('hide'); clearInterval(timerId); timerId=setInterval(()=>{ if(!running) return; const rem=Math.max(0,DUR-(performance.now()-t0)/1000); $('#time').textContent=Math.ceil(rem); if(rem<=0) endGame(); },200); newQ(); $('#in').focus(); }
+function flash(cls){ const l=$('#letters'); l.classList.remove('good','bad'); void l.offsetWidth; l.classList.add(cls); }
+function submit(){ if(!running) return; const val=$('#in').value.toUpperCase().trim(); if(!val) return; if(val===cur){ score++; $('#score').textContent=score; flash('good'); Arcade.sfx('correct'); newQ(); } else { flash('bad'); Arcade.sfx('wrong'); revealed=Math.min(cur.length-1,revealed+1); render(); $('#in').value=''; } }
+$('#ok').onclick=submit;
+$('#skip').onclick=()=>{ if(!running) return; Arcade.sfx('whoosh'); newQ(); };
+$('#in').addEventListener('keydown',e=>{ if(e.key==='Enter') submit(); });
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

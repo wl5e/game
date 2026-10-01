@@ -10,34 +10,110 @@
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;display:grid;place-items:center;position:relative;overflow:hidden;user-select:none}
+  .area canvas{display:block;border-radius:14px}
   button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .ov{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:8px;background:rgba(7,11,18,.86);text-align:center;padding:16px;z-index:5;border-radius:14px}
+  .ov .t{font-size:24px;font-weight:800;color:#fff}
+  .ov .s{color:#94a3b8;font-size:12px;letter-spacing:.1em}
+  .ov.hide{display:none}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>CREVÉS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <div class="hud"><span>CREVÉS <b id="score">0</b></span><span>TEMPS <b id="time">30</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas><div class="ov hide" id="ov"></div></div>
   <button id="go">Rejouer</button>
-  <div class="hint">Crève le plus de ballons en 30 s.</div>
+  <div class="hint">Crève le plus de ballons possible en 30 s en les touchant.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('balloons.best')||'0',10)||0}catch(e){}
 function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('balloons.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('balloons.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-const cv=$('#cv'),c=cv.getContext('2d'); let balls=[], score=0, t=30000, raf=null;
-function spawn(){ if(Math.random()<0.05) balls.push({x:20+Math.random()*(cv.width-40),y:cv.height+20,r:18+Math.random()*10,c:['#f87171','#fbbf24','#4ade80','#60a5fa'][Math.floor(Math.random()*4)]}); }
-function frame(){ spawn(); balls.forEach(b=>b.y-=2); balls=balls.filter(b=>b.y>-30); c.clearRect(0,0,cv.width,cv.height); balls.forEach(b=>{ c.fillStyle=b.c; c.beginPath(); c.arc(b.x,b.y,b.r,0,7); c.fill(); c.strokeStyle='rgba(255,255,255,.4)'; c.beginPath(); c.moveTo(b.x,b.y+b.r); c.lineTo(b.x,b.y+b.r+14); c.stroke(); }); raf=requestAnimationFrame(frame); }
-cv.onclick=e=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height); for(let i=balls.length-1;i>=0;i--){ const b=balls[i]; if((x-b.x)**2+(y-b.y)**2 < b.r*b.r){ balls.splice(i,1); score++; $('#score').textContent=score; break; } } };
-$('#go').onclick=()=>{ balls=[]; score=0; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); setTimeout(()=>{ cancelAnimationFrame(raf); saveHigh(score); },t); };
+const cv=$('#cv'),c=cv.getContext('2d'),area=$('#area'),ov=$('#ov');
+const DUR=30;
+const COLORS=['#f87171','#fbbf24','#4ade80','#60a5fa','#c084fc'];
+let balls,bursts,score,t0,running,raf,last;
+function reset(){
+  balls=[]; bursts=[]; score=0; running=true;
+  t0=performance.now(); last=0;
+  $('#score').textContent='0'; $('#time').textContent=DUR;
+  ov.classList.add('hide');
+  cancelAnimationFrame(raf); raf=requestAnimationFrame(loop);
+}
+function spawn(){
+  const r=16+Math.random()*12;
+  balls.push({x:24+Math.random()*(cv.width-48),y:cv.height+r+8,r,vy:1.2+Math.random()*1.1,c:COLORS[Math.floor(Math.random()*COLORS.length)]});
+}
+function burst(x,y,c){
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2, sp=1+Math.random()*2.5;
+    bursts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,age:0,life:18+Math.random()*12,c});
+  }
+}
+function endGame(){
+  running=false; cancelAnimationFrame(raf);
+  saveHigh(score);
+  Arcade.sfx('win');
+  ov.innerHTML='<div class="t">TEMPS ÉCOULÉ</div><div class="s">Ballons crevés : '+score+'</div>';
+  ov.classList.remove('hide');
+}
+function loop(ts){
+  if(!running) return;
+  const dt=Math.min(0.05,(ts-last)/1000||0.016); last=ts;
+  const el=(ts-t0)/1000;
+  const rem=Math.max(0,DUR-el);
+  $('#time').textContent=Math.ceil(rem);
+  if(rem<=0){ draw(el); endGame(); return; }
+  if(Math.random()<0.03+el*0.0008) spawn();
+  const speed=(1+el*0.05);
+  for(const b of balls) b.y-=b.vy*speed*dt*60;
+  balls=balls.filter(b=>b.y+b.r>-20);
+  for(let i=bursts.length-1;i>=0;i--){
+    const p=bursts[i];
+    p.age++; p.x+=p.vx; p.y+=p.vy; p.vy+=0.12;
+    if(p.age>p.life) bursts.splice(i,1);
+  }
+  draw(el);
+  raf=requestAnimationFrame(loop);
+}
+function draw(el){
+  c.clearRect(0,0,cv.width,cv.height);
+  for(const b of balls){
+    c.fillStyle=b.c; c.beginPath(); c.arc(b.x,b.y,b.r,0,7); c.fill();
+    c.fillStyle='rgba(255,255,255,.35)'; c.beginPath(); c.arc(b.x-b.r*0.25,b.y-b.r*0.3,b.r*0.28,0,7); c.fill();
+    c.strokeStyle='rgba(255,255,255,.5)'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(b.x,b.y+b.r); c.lineTo(b.x,b.y+b.r+16); c.stroke();
+  }
+  for(const p of bursts){
+    c.globalAlpha=1-p.age/p.life;
+    c.fillStyle=p.c; c.beginPath(); c.arc(p.x,p.y,2.5,0,7); c.fill();
+  }
+  c.globalAlpha=1;
+  c.fillStyle='#64748b'; c.font='bold 12px monospace'; c.textAlign='left'; c.fillText(Math.ceil(Math.max(0,DUR-el))+'s',10,16);
+}
+cv.addEventListener('pointerdown',e=>{
+  if(!running) return;
+  const r=cv.getBoundingClientRect();
+  const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height);
+  for(let i=balls.length-1;i>=0;i--){
+    const b=balls[i];
+    if((x-b.x)**2+(y-b.y)**2 < b.r*b.r){
+      balls.splice(i,1); score++; $('#score').textContent=score;
+      burst(x,y,b.c); Arcade.sfx('pop');
+      return;
+    }
+  }
+  Arcade.sfx('click');
+});
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

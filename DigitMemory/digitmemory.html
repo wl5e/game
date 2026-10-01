@@ -1,42 +1,126 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Digit Memory</title>
 <style>
   *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
   .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
   .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button.big{width:100%}
   button:active{transform:translateY(1px)}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .msg{font-size:11px;letter-spacing:.2em;color:#64748b}
+  #seq{font-size:30px;font-weight:800;letter-spacing:.22em;min-height:40px;word-break:break-all;color:#fbbf24;transition:color .15s}
+  #seq.good{color:#4ade80}
+  #ans{font-size:26px;letter-spacing:.3em;min-height:34px;color:#38bdf8}
+  #pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:280px}
+  button.pad{background:#1e293b;border:1px solid #334155;color:#e2e8f0;font-size:18px;font-weight:700;padding:12px;border-radius:12px}
+  button.pad:active{background:#0ea5e9;color:#04222a}
+  .overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(7,11,18,.9);z-index:5;text-align:center}
+  .overlay .t{font-size:24px;font-weight:800;color:#f87171}
+  .overlay .s{color:#94a3b8;margin-top:10px;font-size:13px;line-height:1.6;letter-spacing:.1em}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+  .shake{animation:shake .3s}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>CHIFFRES <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="seq">123</div><input id="in" maxlength="12" style="background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px;font-size:18px;text-align:center;width:160px" placeholder="?"></div>
-  <button id="go">Rejouer</button>
-  <div class="hint">Mémorise puis retape la suite de chiffres.</div>
+  <div class="hud"><span>CHIFFRES <b id="score">1</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area">
+    <div class="msg" id="msg">Mémorise…</div>
+    <div id="seq">—</div>
+    <div id="ans">·</div>
+    <div id="pad"></div>
+  </div>
+  <button class="big" id="go">Rejouer</button>
+  <div class="hint">Mémorise la suite de chiffres puis retape-la sur le pavé. Plus la suite est longue, mieux c'est. · Par 8</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
 let best=0;try{best=parseInt(localStorage.getItem('digitmemory.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('digitmemory.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('digitmemory.best',String(v))}catch(e){}} upd(); }
 function upd(){ $('#best').textContent=best?best:'—'; }
-let level=1, cur='';
-function newSeq(){ cur=''; for(let i=0;i<level;i++) cur+=Math.floor(Math.random()*10); $('#seq').textContent=cur; setTimeout(()=>{ $('#seq').textContent='?'.repeat(cur.length); }, 1200); }
-$('#in').onkeydown=e=>{ if(e.key==='Enter'){ if($('#in').value===cur){ level++; $('#score').textContent=level; $('#in').value=''; newSeq(); } else { saveHigh(level); $('#area').innerHTML='<div class="big">FINI ! '+level+' chiffres</div>'; } } };
-$('#go').onclick=()=>{ level=1; $('#score').textContent='1'; $('#in').value=''; $('#area').innerHTML='<div class="big" id="seq">123</div><input id="in" maxlength="12" style="background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px;font-size:18px;text-align:center;width:160px" placeholder="?">'; $('#in').onkeydown=e=>{ if(e.key==='Enter'){ if($('#in').value===cur){ level++; $('#score').textContent=level; $('#in').value=''; newSeq(); } else { saveHigh(level); $('#area').innerHTML='<div class="big">FINI ! '+level+' chiffres</div>'; } } }; newSeq(); };
+function saveHigh(v){ if(v>best){ best=v; try{localStorage.setItem('digitmemory.best',String(v))}catch(e){} upd(); } }
+
+const pad=$('#pad');
+[1,2,3,4,5,6,7,8,9,'⌫',0,''].forEach(d=>{
+  const b=document.createElement('button'); b.className='pad';
+  if(d===''){ b.style.visibility='hidden'; }
+  else { b.textContent=d; b.onclick=()=>press(String(d)); }
+  pad.appendChild(b);
+});
+
+let level=1, seq='', entered='', busy=true, over=false, gen=0;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function setMsg(t){ $('#msg').textContent=t; }
+
+async function startRound(myGen){
+  busy=true; over=false; entered='';
+  seq=''; for(let i=0;i<level;i++) seq+=Math.floor(Math.random()*10);
+  $('#seq').classList.remove('good');
+  $('#seq').textContent=seq; renderAns();
+  setMsg('Mémorise…');
+  await sleep(950 + level*230);
+  if(gen!==myGen) return;
+  $('#seq').textContent='?'.repeat(seq.length);
+  busy=false;
+  setMsg('Retape la suite');
+}
+
+function renderAns(){
+  $('#ans').textContent = entered + '·'.repeat(Math.max(0, seq.length - entered.length));
+}
+
+function press(d){
+  if(busy||over) return;
+  if(d==='⌫'){ if(entered.length){ entered=entered.slice(0,-1); Arcade.sfx('click'); renderAns(); } return; }
+  if(entered.length>=seq.length) return;
+  entered+=d; Arcade.sfx('tick'); renderAns();
+  if(entered.length===seq.length) check();
+}
+
+function check(){
+  busy=true;
+  if(entered===seq){
+    over=true; Arcade.sfx('correct');
+    $('#seq').textContent=seq; $('#seq').classList.add('good');
+    level++; $('#score').textContent=level;
+    setMsg('✔ Parfait !');
+    setTimeout(()=>startRound(gen), 750);
+  } else {
+    over=true; Arcade.sfx('wrong'); setTimeout(()=>Arcade.sfx('lose'),220);
+    $('#area').classList.add('shake'); setTimeout(()=>$('#area').classList.remove('shake'),320);
+    saveHigh(level);
+    showOver('Perdu !', 'La suite était<br><b style="color:#fbbf24;letter-spacing:.15em">'+seq+'</b><br>Niveau atteint : '+level);
+  }
+}
+
+function showOver(t,s){
+  const ov=document.createElement('div'); ov.className='overlay'; ov.innerHTML='<div><div class="t">'+t+'</div><div class="s">'+s+'</div></div>';
+  $('#area').appendChild(ov);
+}
+
+function reset(){
+  gen++;
+  level=1; seq=''; entered=''; over=false; busy=true;
+  $('#score').textContent='1';
+  $('#seq').classList.remove('good'); $('#seq').textContent='—'; $('#ans').textContent='·';
+  const ov=$('.overlay'); if(ov) ov.remove();
+  $('#area').classList.remove('shake');
+  setMsg('Préparation…');
+  upd();
+  startRound(gen);
+}
+$('#go').onclick=reset;
 upd();
+reset();
 </script>
 </body>
 </html>

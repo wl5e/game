@@ -5,37 +5,102 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <title>Times Table</title>
 <style>
-  *{box-sizing:border-box} html,body{height:100%}
-  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  *{box-sizing:border-box}html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent;--acc:#f472b6}
   .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
-  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
-  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
-  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
-  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  .hud{display:flex;justify-content:space-between;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:11px;letter-spacing:.08em;color:#64748b}
+  .hud b{color:var(--acc);font-size:19px;font-weight:800;margin-left:5px;letter-spacing:0}
+  .bar{height:8px;background:#0b1220;border:1px solid #1e293b;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;width:100%;background:var(--acc);border-radius:99px;transition:width .1s linear}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:16px;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px;text-align:center;user-select:none;position:relative;overflow:hidden;transition:box-shadow .12s ease}
+  .area.good{box-shadow:0 0 0 3px var(--acc),0 0 48px -6px var(--acc)}
+  .area.bad{box-shadow:0 0 0 3px #f87171,0 0 48px -6px #f87171;animation:shake .38s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  @keyframes popIn{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+  .pop{animation:popIn .18s ease}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:var(--acc);color:#26060f;cursor:pointer}
   button:active{transform:translateY(1px)}
+  .go{width:100%}
   .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
-  .big{font-size:26px;font-weight:800}
-  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
-  .opt:hover{border-color:#38bdf8}
+  .big{font-size:30px;font-weight:800;line-height:1.15}
+  .opts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px}
+  .opt{background:#15202e;border:1px solid #2a3b4d;color:#e2e8f0;border-radius:10px;padding:12px 16px;font-size:16px;font-weight:700;cursor:pointer;min-width:66px}
+  .opt:hover{border-color:var(--acc)}
+  .over{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .o-title{font-size:14px;letter-spacing:.16em;color:#64748b}
+  .o-score{font-size:46px;font-weight:800;color:var(--acc)}
+  .o-sub{font-size:13px;color:#94a3b8}
+  .o-sub.rec{color:var(--acc)}
 </style>
+<script src="../audio.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <div class="hud"><span>BONS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
-  <div class="area" id="area"><div class="big" id="q">7×8</div><div style="display:flex;gap:8px;margin-top:12px" id="opts"></div></div>
-  <button id="go">Rejouer</button>
-  <div class="hint">Tables de multiplication. 45 secondes.</div>
+  <div class="hud"><span>BONS <b id="score">0</b></span><span>BEST <b id="best">—</b></span><span>TEMPS <b id="time">45</b></span></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="area" id="area"></div>
+  <button id="go" class="go">Rejouer</button>
+  <div class="hint">Tables de multiplication : un maximum de bonnes réponses en 45 secondes.</div>
 </div>
 <script>
+"use strict";
 const $=s=>document.querySelector(s);
-let best=0;try{best=parseInt(localStorage.getItem('times.best')||'0',10)||0}catch(e){}
-function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('times.best',String(v))}catch(e){}} upd(); }
-function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('times.best',String(v))}catch(e){}} upd(); }
+const KEY='times.best';
+let best=0; try{best=parseInt(localStorage.getItem(KEY)||'0',10)||0}catch(e){}
 function upd(){ $('#best').textContent=best?best:'—'; }
-let score=0, t=45000, ans=0;
-function q(){ const a=2+Math.floor(Math.random()*11), b=2+Math.floor(Math.random()*11); ans=a*b; $('#q').textContent=a+'×'+b; const opts=new Set([ans]); while(opts.size<4) opts.add(ans+Math.floor(Math.random()*13)-6); $('#opts').innerHTML=[...opts].sort(()=>Math.random()-0.5).map(v=>`<button class="opt">${v}</button>`).join(''); $('#opts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ if(parseInt(b.textContent)===ans){ score++; $('#score').textContent=score; } q(); }); }
-$('#go').onclick=()=>{ score=0; $('#score').textContent='0'; q(); setTimeout(()=>{ saveHigh(score); },t); };
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('times.best',String(v))}catch(e){}upd();return true;} return false; }
+const sfx=n=>{ try{window.Arcade&&window.Arcade.sfx(n);}catch(e){} };
+function flash(good){ const a=$('#area'); a.classList.remove('good','bad'); void a.offsetWidth; a.classList.add(good?'good':'bad'); clearTimeout(flash._t); flash._t=setTimeout(()=>a.classList.remove('good','bad'),420); }
+function popEl(el){ if(!el) return; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+
+let score=0, running=false, timerId=null, endTime=0, lastTick=0, ans=0;
+const DUR=45000;
+
+function makeOpts(ans, span){
+  const set=new Set([ans]); let guard=0;
+  while(set.size<4 && guard<300){ const off=Math.floor(Math.random()*(span*2+1))-span; const v=ans+off; if(v!==ans && v>=0) set.add(v); guard++; }
+  let k=1; while(set.size<4){ set.add(ans+k); k++; }
+  return [...set].sort(()=>Math.random()-0.5);
+}
+function renderOpts(arr){ $('#opts').innerHTML=arr.map(v=>`<button class="opt" data-v="${v}">${v}</button>`).join(''); $('#opts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(parseInt(b.dataset.v,10))); }
+
+function newQuestion(){
+  const a=2+Math.floor(Math.random()*11), b=2+Math.floor(Math.random()*11);
+  ans=a*b;
+  $('#q').textContent=a+' × '+b+' = ?';
+  popEl($('#q'));
+  renderOpts(makeOpts(ans, Math.max(6, Math.round(ans*0.18))));
+}
+function answer(v){
+  if(!running) return;
+  if(v===ans){ score++; $('#score').textContent=score; sfx('correct'); flash(true); newQuestion(); }
+  else { sfx('wrong'); flash(false); newQuestion(); }
+}
+function tick(){
+  const rem=Math.max(0, endTime-Date.now());
+  const bar=$('#bar'); bar.style.width=(rem/DUR*100)+'%'; bar.style.background=rem<=5000?'#f87171':'var(--acc)';
+  $('#time').textContent=Math.ceil(rem/1000);
+  const s=Math.ceil(rem/1000);
+  if(rem<=5000 && s!==lastTick){ lastTick=s; sfx('tick'); }
+  if(rem<=0) endGame();
+}
+function overHTML(title,sc,rec){ return `<div class="over"><div class="o-title">${title}</div><div class="o-score">${sc}</div><div class="o-sub${rec?' rec':''}">${rec?'NOUVEAU RECORD !':'Appuie sur Rejouer pour recommencer'}</div></div>`; }
+function endGame(){
+  if(!running) return; running=false; clearInterval(timerId);
+  const rec=saveHigh(score); sfx(rec?'win':'lose');
+  $('#area').innerHTML=overHTML('TEMPS ÉCOULÉ', score, rec);
+}
+function start(){
+  score=0; running=true; lastTick=0; $('#score').textContent='0';
+  clearInterval(timerId); endTime=Date.now()+DUR; timerId=setInterval(tick,100);
+  $('#bar').style.width='100%'; $('#bar').style.background='var(--acc)'; $('#time').textContent=DUR/1000;
+  $('#area').innerHTML='<div class="big pop" id="q"></div><div class="opts" id="opts"></div>';
+  newQuestion();
+}
+$('#go').onclick=start;
+document.addEventListener('keydown',e=>{ if(!running && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); start(); } });
 upd();
+start();
 </script>
 </body>
 </html>
