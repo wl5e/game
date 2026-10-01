@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Tower of Hanoi</title>
+<style>
+  *{box-sizing:border-box;} html,body{height:100%;}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#0a3a2a 0%,#030f08 65%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#d3f5e5;padding:16px;-webkit-tap-highlight-color:transparent;}
+  .wrap{width:min(88vw,440px);display:flex;flex-direction:column;gap:14px;}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.16em;color:#6aa890;}
+  .hud b{color:#34d399;font-size:20px;font-weight:700;letter-spacing:.02em;margin-left:6px;}
+  .hud button{background:transparent;border:1px solid #1a3a2a;color:#34d399;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:14px;}
+  .board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .peg{position:relative;height:150px;background:#081a12;border-radius:12px;cursor:pointer;border:1px solid #1a3a2a;}
+  .peg.sel{border-color:#34d399;box-shadow:0 0 0 2px #34d399 inset;}
+  .peg .base{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:100%;height:8px;background:#1a3a2a;border-radius:4px;}
+  .peg .pole{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:6px;height:120px;background:#1a3a2a;border-radius:3px;}
+  .disk{position:absolute;left:50%;transform:translateX(-50%);height:14px;border-radius:7px;background:linear-gradient(180deg,#34d399,#059669);}
+  button.big{font-family:inherit;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;letter-spacing:.05em;
+    background:#34d399;color:#03241a;cursor:pointer;}
+  .hint{color:#6aa890;font-size:11px;text-align:center;line-height:1.6;}
+  .won{color:#a7f3d0;text-align:center;font-weight:700;font-size:14px;letter-spacing:.05em;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>MOVES <b id="moves">0</b></span><span>BEST <b id="best">—</b></span><button id="mbtn" onclick="toggleMusic()">🔊</button></div>
+  <div class="board" id="board"></div>
+  <div class="hint">Déplace tous les disques vers la tour de droite.<br>Un disque ne peut jamais reposer sur un plus petit.</div>
+  <div class="won" id="won"></div>
+  <button class="big" id="reset">🗼 Recommencer</button>
+</div>
+<script>
+"use strict";
+const NOTE={C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,C6:1046.5};
+const MELODY=['D4','E4','G4','A4','C5','A4','G4','E4']; const BPM=70;
+let actx=null,musTimer=null,musOn=false;
+function beep(f,t,d){const o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.07,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d);}
+function startMusic(){if(musOn)return;musOn=true;if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();const step=60/BPM;let i=0;musTimer=setInterval(()=>{beep(NOTE[MELODY[i%MELODY.length]],actx.currentTime+.02,step*.9);i++;},step*1000);}
+function stopMusic(){musOn=false;clearInterval(musTimer);musTimer=null;}
+function toggleMusic(){if(musOn)stopMusic();else startMusic();const b=document.getElementById('mbtn');if(b)b.textContent=musOn?'🔊':'🔇';}
+document.addEventListener('pointerdown',function first(){startMusic();document.removeEventListener('pointerdown',first);});
+const DISKS=4;
+let pegs, moves, sel, won;
+let best=0; try{ best=parseInt(localStorage.getItem('hanoi.best')||'0',10)||0; }catch(e){}
+const $=s=>document.querySelector(s);
+function render(){
+  const el=$('#board'); el.innerHTML='';
+  pegs.forEach((peg,pi)=>{
+    const p=document.createElement('div');
+    p.className='peg'+(sel===pi?' sel':'');
+    p.onclick=()=>tap(pi);
+    p.innerHTML='<div class="pole"></div><div class="base"></div>';
+    peg.forEach((d,di)=>{
+      const disk=document.createElement('div');
+      disk.className='disk';
+      disk.style.width=(40+d*16)+'px';
+      disk.style.bottom=(8+di*15)+'px';
+      p.appendChild(disk);
+    });
+    el.appendChild(p);
+  });
+  $('#moves').textContent=moves;
+  $('#best').textContent=best?best:'—';
+}
+function tap(i){
+  if(won) return;
+  if(sel===null){ if(pegs[i].length) sel=i; }
+  else if(sel===i){ sel=null; }
+  else {
+    const top=pegs[sel][pegs[sel].length-1];
+    const dst=pegs[i][pegs[i].length-1];
+    if(!dst || top<dst){ pegs[i].push(pegs[sel].pop()); sel=null; moves++; }
+    else sel=i;
+  }
+  render();
+  if(pegs[2].length===DISKS){
+    won=true; $('#won').textContent='🏆 Fini en '+moves+' coups !';
+    if(!best || moves<best){ best=moves; try{ localStorage.setItem('hanoi.best',String(best)); }catch(e){} }
+    $('#best').textContent=best;
+  }
+}
+function reset(){ pegs=[Array.from({length:DISKS},(_,i)=>DISKS-i),[],[]]; moves=0; sel=null; won=false; $('#won').textContent=''; render(); }
+$('#reset').onclick=reset;
+reset();
+</script>
+</body>
+</html>

@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Mastermind</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(120% 80% at 50% 0%, #2a1a5a 0%, #08040f 65%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #cbd5e1;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap {
+    width: min(88vw, 480px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: #64748b;
+  }
+  .hud b {
+    color: #4ade80;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-left: 6px;
+    text-shadow: 0 0 14px rgba(74, 222, 128, .45);
+  }
+
+  .board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 5 / 6;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b1220;
+    box-shadow:
+      0 0 0 1px #1e293b,
+      0 0 0 6px rgba(15, 23, 42, .55),
+      0 30px 60px -25px #000;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pause-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .72);
+    color: #cbd5e1;
+    font-size: 12px;
+    letter-spacing: 0;
+    cursor: pointer;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 90;
+  }
+  .pause-btn.show { display: flex; }
+  .pause-btn:hover { background: rgba(30, 41, 59, .8); }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 24px;
+    background: rgba(5, 9, 16, .82);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .overlay h1 {
+    margin: 0;
+    font-size: clamp(26px, 8vw, 40px);
+    letter-spacing: .22em;
+    color: #e2e8f0;
+    text-shadow: 0 0 26px rgba(74, 222, 128, .35);
+  }
+  .overlay p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #94a3b8;
+    letter-spacing: .06em;
+    max-width: 30ch;
+  }
+
+  button {
+    margin-top: 4px;
+    padding: 12px 30px;
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: .18em;
+    color: #04210f;
+    background: linear-gradient(180deg, #86efac, #4ade80);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px -8px rgba(74, 222, 128, .8);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(74, 222, 128, .9); }
+  button:active { transform: translateY(1px) scale(.98); }
+
+  .hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: #475569;
+  }
+
+  /* ---------- Mastermind-specific ---------- */
+  .rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 42px 12px 10px;
+    min-height: 0;
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .slots {
+    display: flex;
+    gap: 6px;
+  }
+  .slot {
+    width: clamp(16px, 6vw, 40px);
+    height: clamp(16px, 6vw, 40px);
+    border-radius: 50%;
+    border: 2px solid #334155;
+    background: #131c2c;
+    transition: border-color .12s ease;
+  }
+  .slot.filled { border-color: #475569; }
+  .row.active .slot { border-color: #4ade80; }
+  .slot.done { border-color: #1e293b; }
+
+  .pegs {
+    display: grid;
+    grid-template-columns: repeat(2, clamp(6px, 2.2vw, 12px));
+    grid-template-rows: repeat(2, clamp(6px, 2.2vw, 12px));
+    gap: 3px;
+  }
+  .peg {
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+  .peg.black { background: #0f172a; border: 2px solid #4ade80; }
+  .peg.white { background: #e2e8f0; border: 1px solid #64748b; }
+
+  .controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 14px 16px;
+  }
+  .palette {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+  button.swatch {
+    margin: 0;
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid #1e293b;
+    box-shadow: none;
+    cursor: pointer;
+  }
+  button.swatch:hover { transform: translateY(-2px); }
+  button.swatch.selected { border-color: #e2e8f0; box-shadow: 0 0 0 3px rgba(226, 232, 240, .25); }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  button.act {
+    margin: 0;
+    padding: 10px 24px;
+    font-size: 12px;
+    letter-spacing: .14em;
+    color: #cbd5e1;
+    background: #131c2c;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    box-shadow: none;
+    cursor: pointer;
+  }
+  button.act:hover { background: #1e293b; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hud">
+    <div>SCORE<b id="score">0</b></div>
+    <div>BEST<b id="best">—</b></div>
+  </div>
+
+  <div class="board">
+    <div class="rows" id="rows"></div>
+    <div class="controls">
+      <div class="palette" id="palette"></div>
+      <div class="actions">
+        <button class="act" id="submitBtn">SUBMIT</button>
+        <button class="act" id="clearBtn">CLEAR</button>
+      </div>
+    </div>
+    <button class="pause-btn" id="pauseBtn" aria-label="Pause">❚❚</button>
+    <div class="overlay show" id="overlay">
+      <h1 id="ovTitle">MASTERMIND</h1>
+      <p id="ovText">Crack the hidden 4-color code in ten rows. Black peg = right color and spot, white peg = right color only.</p>
+      <button id="ovBtn">PLAY</button>
+      <button id="ovBtn2" style="display:none">RESTART</button>
+    </div>
+  </div>
+
+  <p class="hint">1–6 COLORS &nbsp;·&nbsp; ENTER SUBMIT &nbsp;·&nbsp; BACKSPACE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; R RESTART</p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Setup ---------- */
+  const NUM_COLORS = 6;
+  const CODE_LEN = 4;
+  const NUM_ROWS = 10;
+  const COLORS = ['#ef4444', '#4ade80', '#3b82f6', '#facc15', '#a855f7', '#fb923c'];
+  const NAMES = ['Red', 'Green', 'Blue', 'Yellow', 'Purple', 'Orange'];
+
+  const overlay   = document.getElementById('overlay');
+  const ovTitle   = document.getElementById('ovTitle');
+  const ovText    = document.getElementById('ovText');
+  const ovBtn     = document.getElementById('ovBtn');
+  const ovBtn2    = document.getElementById('ovBtn2');
+  const pauseBtn  = document.getElementById('pauseBtn');
+  const scoreEl   = document.getElementById('score');
+  const bestEl    = document.getElementById('best');
+  const rowsEl    = document.getElementById('rows');
+  const paletteEl = document.getElementById('palette');
+  const submitBtn = document.getElementById('submitBtn');
+  const clearBtn  = document.getElementById('clearBtn');
+
+  /* ---------- State ---------- */
+  let code;          // hidden code: array of color indices 0..5
+  let guesses;       // submitted rows: array of { guess, feedback }
+  let current;       // colors being built on the active row
+  let state = 'idle'; // 'idle' | 'playing' | 'paused' | 'over'
+
+  let best = 999; // fewest guesses to solve (lower is better); sentinel = never won
+  try {
+    const v = parseInt(localStorage.getItem('mastermind.best') || '', 10);
+    if (v >= 1 && v <= NUM_ROWS) best = v;
+  } catch (e) {}
+  bestEl.textContent = best >= 999 ? '—' : best;
+
+  /* ---------- Helpers ---------- */
+  function showOverlay(title, text, btnLabel, btn2Label) {
+    ovTitle.textContent = title;
+    ovText.textContent = text;
+    ovBtn.textContent = btnLabel;
+    if (btn2Label) { ovBtn2.textContent = btn2Label; ovBtn2.style.display = ''; }
+    else { ovBtn2.style.display = 'none'; }
+    overlay.classList.add('show');
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove('show');
+  }
+
+  function updatePauseBtn() { pauseBtn.classList.toggle('show', state === 'playing'); }
+
+  function updateHud() {
+    scoreEl.textContent = (state === 'playing' || state === 'over') ? (NUM_ROWS - guesses.length) : 0;
+    bestEl.textContent = best >= 999 ? '—' : best;
+  }
+
+  /* ---------- Build rows ---------- */
+  const rowRefs = [];
+  for (let r = 0; r < NUM_ROWS; r++) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.dataset.row = r;
+
+    const slotsWrap = document.createElement('div');
+    slotsWrap.className = 'slots';
+    const slots = [];
+    for (let c = 0; c < CODE_LEN; c++) {
+      const s = document.createElement('div');
+      s.className = 'slot';
+      s.addEventListener('click', () => truncateAt(r, c));
+      slotsWrap.appendChild(s);
+      slots.push(s);
+    }
+
+    const pegsWrap = document.createElement('div');
+    pegsWrap.className = 'pegs';
+    const pegs = [];
+    for (let p = 0; p < CODE_LEN; p++) {
+      const peg = document.createElement('div');
+      peg.className = 'peg';
+      pegsWrap.appendChild(peg);
+      pegs.push(peg);
+    }
+
+    row.appendChild(slotsWrap);
+    row.appendChild(pegsWrap);
+    rowsEl.appendChild(row);
+    rowRefs.push({ row, slots, pegs });
+  }
+
+  /* ---------- Build palette ---------- */
+  const swatches = [];
+  for (let i = 0; i < NUM_COLORS; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'swatch';
+    b.style.background = COLORS[i];
+    b.dataset.c = i;
+    b.addEventListener('click', () => { b.blur(); addColor(i); });
+    paletteEl.appendChild(b);
+    swatches.push(b);
+  }
+
+  /* ---------- Rendering ---------- */
+  function render() {
+    for (let r = 0; r < NUM_ROWS; r++) {
+      const ref = rowRefs[r];
+      ref.row.classList.toggle('active', state === 'playing' && r === guesses.length);
+      const submitted = r < guesses.length;
+
+      for (let c = 0; c < CODE_LEN; c++) {
+        const slot = ref.slots[c];
+        let color = null;
+        if (submitted) color = guesses[r].guess[c];
+        else if (r === guesses.length && c < current.length) color = current[c];
+        slot.style.background = color !== null ? COLORS[color] : '#131c2c';
+        slot.classList.toggle('filled', color !== null);
+        slot.classList.toggle('done', submitted);
+      }
+
+      for (let p = 0; p < CODE_LEN; p++) {
+        const peg = ref.pegs[p];
+        peg.classList.remove('black', 'white');
+        if (submitted) peg.classList.add(guesses[r].feedback[p] === 'black' ? 'black' : (guesses[r].feedback[p] === 'white' ? 'white' : ''));
+      }
+    }
+    updateHud();
+  }
+
+  /* ---------- Game logic ---------- */
+  function newCode() {
+    code = [];
+    for (let i = 0; i < CODE_LEN; i++) code.push((Math.random() * NUM_COLORS) | 0);
+  }
+
+  function scoreGuess(guessArr) {
+    let black = 0;
+    const codeCount = {};
+    const guessCount = {};
+    for (let i = 0; i < CODE_LEN; i++) {
+      if (guessArr[i] === code[i]) {
+        black++;
+      } else {
+        codeCount[code[i]] = (codeCount[code[i]] || 0) + 1;
+        guessCount[guessArr[i]] = (guessCount[guessArr[i]] || 0) + 1;
+      }
+    }
+    let white = 0;
+    for (const c in guessCount) white += Math.min(guessCount[c], codeCount[c] || 0);
+
+    const fb = [];
+    for (let i = 0; i < black; i++) fb.push('black');
+    for (let i = 0; i < white; i++) fb.push('white');
+    while (fb.length < CODE_LEN) fb.push('');
+    return fb;
+  }
+
+  function addColor(i) {
+    if (state !== 'playing') return;
+    if (current.length >= CODE_LEN) return;
+    current.push(i);
+    render();
+  }
+
+  function truncateAt(r, c) {
+    if (state !== 'playing') return;
+    if (r !== guesses.length) return;
+    current = current.slice(0, c);
+    render();
+  }
+
+  function submit() {
+    if (state !== 'playing') return;
+    if (current.length < CODE_LEN) return;
+    const feedback = scoreGuess(current);
+    guesses.push({ guess: current.slice(), feedback });
+    current = [];
+
+    const won = feedback.filter((x) => x === 'black').length === CODE_LEN;
+    if (won) { endGame(true); return; }
+    if (guesses.length >= NUM_ROWS) { endGame(false); return; }
+    render();
+  }
+
+  function endGame(won) {
+    state = 'over';
+    updatePauseBtn();
+    updateHud();
+    if (won) {
+      const used = guesses.length;
+      if (used < best) {
+        best = used;
+        try { localStorage.setItem('mastermind.best', String(best)); } catch (e) {}
+      }
+      updateHud();
+      showOverlay(
+        'YOU WIN',
+        `Cracked the code in ${used} guess${used === 1 ? '' : 'es'}. Best: ${best}.`,
+        'PLAY AGAIN'
+      );
+    } else {
+      showOverlay(
+        'GAME OVER',
+        `No more guesses. The code was ${code.map((c) => NAMES[c]).join(', ')}.`,
+        'PLAY AGAIN'
+      );
+    }
+    render();
+  }
+
+  function start() {
+    newCode();
+    guesses = [];
+    current = [];
+    state = 'playing';
+    hideOverlay();
+    updatePauseBtn();
+    updateHud();
+    render();
+  }
+
+  function togglePause() {
+    if (state === 'playing') {
+      state = 'paused';
+      showOverlay('PAUSED', 'The code is still safe. Press resume to keep cracking it.', 'RESUME', 'RESTART');
+    } else if (state === 'paused') {
+      state = 'playing';
+      hideOverlay();
+    }
+    updatePauseBtn();
+  }
+
+  /* ---------- Input ---------- */
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+
+    if (k === ' ' || k === 'Spacebar' || k.startsWith('Arrow') || k === 'Backspace') e.preventDefault();
+
+    if (k === 'r' || k === 'R') { start(); return; }
+
+    if (k === ' ' || k === 'Spacebar') {
+      if (state === 'playing' || state === 'paused') togglePause();
+      else start();
+      return;
+    }
+
+    if (k === 'p' || k === 'P') {
+      if (state === 'playing' || state === 'paused') togglePause();
+      return;
+    }
+
+    if (state !== 'playing') return;
+
+    if (k >= '1' && k <= '6') { addColor(parseInt(k, 10) - 1); return; }
+    if (k === 'Enter') { submit(); return; }
+    if (k === 'Backspace') { current.pop(); render(); return; }
+  });
+
+  submitBtn.addEventListener('click', () => { submitBtn.blur(); submit(); });
+  clearBtn.addEventListener('click', () => {
+    clearBtn.blur();
+    if (state === 'playing') { current = []; render(); }
+  });
+
+  ovBtn.addEventListener('click', () => {
+    ovBtn.blur();
+    if (state === 'paused') togglePause();
+    else start();
+  });
+
+  ovBtn2.addEventListener('click', () => {
+    ovBtn2.blur();
+    start();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    pauseBtn.blur();
+    if (state === 'playing') togglePause();
+  });
+
+  // Auto-pause when the tab loses focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') togglePause();
+  });
+
+  /* ---------- Boot ---------- */
+  guesses = [];
+  current = [];
+  render();
+  state = 'idle';
+  updatePauseBtn();
+  updateHud();
+})();
+</script>
+<style>
+.sound-btn{position:fixed;top:12px;left:12px;width:38px;height:38px;border:1px solid #1e293b;border-radius:10px;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:16px;line-height:1;cursor:pointer;z-index:99;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.sound-btn:hover{background:rgba(30,41,59,.8)}
+</style>
+<button class="sound-btn" id="soundBtn" aria-label="Toggle sound">♪</button>
+<script>
+(function () {
+  "use strict";
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, master = null, musicGain = null, noiseBuf = null;
+  var muted = false, musicOn = false, timer = null, step = 0, nextT = 0;
+
+  var LEAD = [987.76,1174.65,1479.97,1759.99,1479.97,1174.65,987.76,0,987.76,1174.65,1479.97,1759.99,1479.97,1174.65,987.76,0];
+  var BASS = [246.94,369.99,246.94,0,246.94,369.99,246.94,0,246.94,369.99,246.94,0,246.94,369.99,246.94,0];
+  var STEP = 0.16;
+
+  try { muted = localStorage.getItem('arcade.muted') === '1'; } catch (e) {}
+
+  function ensureCtx() {
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.6;
+      master.connect(ctx.destination);
+      musicGain = ctx.createGain();
+      musicGain.gain.value = 0.5;
+      musicGain.connect(master);
+      var n = Math.floor(ctx.sampleRate * 0.04);
+      noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  function note(freq, t, dur, type, vol) {
+    if (!freq) return;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  function hat(t) {
+    var s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+    var g = ctx.createGain(); g.gain.value = 0.05;
+    s.connect(hp); hp.connect(g); g.connect(musicGain);
+    s.start(t);
+  }
+
+  function schedule(i, t) {
+    var k = i % LEAD.length;
+    note(LEAD[k], t, STEP * 0.9, 'square', 0.16);
+    note(BASS[k], t, STEP * 0.95, 'triangle', 0.2);
+    hat(t);
+  }
+
+  function tick() {
+    while (nextT < ctx.currentTime + 0.12) {
+      schedule(step, nextT);
+      step++;
+      nextT += STEP;
+    }
+  }
+
+  function startMusic() {
+    if (musicOn) return;
+    ensureCtx();
+    musicOn = true;
+    nextT = ctx.currentTime + 0.05;
+    step = 0;
+    timer = setInterval(tick, 25);
+  }
+
+  function stopMusic() {
+    if (timer) { clearInterval(timer); timer = null; }
+    musicOn = false;
+    step = 0;
+  }
+
+  function setMuted(m) {
+    muted = m;
+    try { localStorage.setItem('arcade.muted', m ? '1' : '0'); } catch (e) {}
+    if (master) master.gain.setTargetAtTime(m ? 0 : 0.6, ctx.currentTime, 0.02);
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = m ? '🔇' : '♪';
+  }
+
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    if (pb && pb.classList.contains('show')) { if (!musicOn) startMusic(); }
+    else if (musicOn) stopMusic();
+  }
+
+  function wire() {
+    var sb = document.getElementById('soundBtn');
+    if (sb) sb.addEventListener('click', function () { ensureCtx(); setMuted(!muted); });
+    window.addEventListener('pointerdown', ensureCtx);
+    window.addEventListener('keydown', ensureCtx);
+    var pb = document.getElementById('pauseBtn');
+    if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = muted ? '🔇' : '♪';
+    sync();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+<button class="rules-btn" id="rulesBtn">RULES</button>
+<div class="rules-panel" id="rulesPanel">
+  <div class="rules-card">
+    <h2>HOW TO PLAY</h2>
+    <p id="rulesText"></p>
+    <button id="rulesClose">BACK</button>
+  </div>
+</div>
+<style>
+.rules-btn{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:10px 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.18em;color:#cbd5e1;background:rgba(15,23,42,.85);border:1px solid #334155;border-radius:999px;cursor:pointer;display:none;z-index:60}
+.rules-btn.show{display:block}
+.rules-btn:hover{background:rgba(30,41,59,.9)}
+.rules-panel{position:fixed;inset:0;background:rgba(5,9,16,.94);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rules-panel.show{display:flex}
+.rules-card{width:min(88vw,440px);max-height:80vh;overflow:auto;background:#0b1220;border:1px solid #1e293b;border-radius:16px;padding:24px;box-shadow:0 30px 60px -25px #000;text-align:center}
+.rules-card h2{margin:0 0 14px;font-size:14px;letter-spacing:.24em;color:#4ade80}
+.rules-card p{margin:0 0 20px;font-size:13px;line-height:1.9;color:#cbd5e1;letter-spacing:.03em;text-align:left}
+.rules-card button{margin:0;padding:10px 26px;font:inherit;font-size:13px;letter-spacing:.18em;color:#04210f;background:linear-gradient(180deg,#86efac,#4ade80);border:0;border-radius:999px;cursor:pointer;box-shadow:0 8px 24px -8px rgba(74,222,128,.8)}
+</style>
+<script>
+(function () {
+  "use strict";
+  var RULES = "Crack the hidden 4-color code (6 colors, duplicates allowed). Build a guess with the color buttons, then submit it. Black pegs mean a right color in the right place; white pegs mean a right color in the wrong place. You have 10 guesses.";
+  var btn = document.getElementById('rulesBtn');
+  var panel = document.getElementById('rulesPanel');
+  var text = document.getElementById('rulesText');
+  var close = document.getElementById('rulesClose');
+  if (text) text.textContent = RULES;
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      if (panel && panel.classList.contains('show')) { panel.classList.remove('show'); return; }
+      try { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true, cancelable: true })); } catch (err) {}
+    }
+  });
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    var title = document.getElementById('ovTitle');
+    var paused = pb && !pb.classList.contains('show') && title && /PAUSED/i.test(title.textContent || '');
+    if (btn) btn.classList.toggle('show', !!paused);
+    var ov = document.getElementById('overlay');
+    if (ov && !ov.classList.contains('show') && panel) panel.classList.remove('show');
+  }
+  var pb = document.getElementById('pauseBtn');
+  if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+  var ov = document.getElementById('overlay');
+  if (ov) new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['class'] });
+  if (btn) btn.addEventListener('click', function () { if (panel) panel.classList.add('show'); });
+  if (close) close.addEventListener('click', function () { if (panel) panel.classList.remove('show'); });
+  if (panel) panel.addEventListener('click', function (e) { if (e.target === panel) panel.classList.remove('show'); });
+  sync();
+})();
+</script>
+<style>
+#score{display:inline-block}
+#score.pulse{animation:scorePulse .45s ease}
+@keyframes scorePulse{
+  0%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+  40%{transform:scale(1.4);text-shadow:0 0 26px rgba(74,222,128,.95)}
+  100%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+}
+</style>
+<script>
+(function () {
+  "use strict";
+  var el = document.getElementById('score');
+  if (!el) return;
+  var last = parseInt(el.textContent, 10) || 0;
+  var mo = new MutationObserver(function () {
+    var cur = parseInt(el.textContent, 10) || 0;
+    if (cur > last) {
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+    }
+    last = cur;
+  });
+  mo.observe(el, { childList: true, characterData: true, subtree: true });
+})();
+</script>
+</body>
+</html>

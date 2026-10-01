@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Wordle</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(120% 80% at 50% 0%, #0a4a2a 0%, #03100a 65%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #cbd5e1;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap {
+    width: min(88vw, 480px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: #64748b;
+  }
+  .hud b {
+    color: #4ade80;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-left: 6px;
+    text-shadow: 0 0 14px rgba(74, 222, 128, .45);
+  }
+
+  .board {
+    position: relative;
+    width: 100%;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b1220;
+    box-shadow:
+      0 0 0 1px #1e293b,
+      0 0 0 6px rgba(15, 23, 42, .55),
+      0 30px 60px -25px #000;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .pause-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .72);
+    color: #cbd5e1;
+    font-size: 12px;
+    letter-spacing: 0;
+    cursor: pointer;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 90;
+  }
+  .pause-btn.show { display: flex; }
+  .pause-btn:hover { background: rgba(30, 41, 59, .8); }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 24px;
+    background: rgba(5, 9, 16, .82);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .overlay h1 {
+    margin: 0;
+    font-size: clamp(26px, 8vw, 40px);
+    letter-spacing: .22em;
+    color: #e2e8f0;
+    text-shadow: 0 0 26px rgba(74, 222, 128, .35);
+  }
+  .overlay p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #94a3b8;
+    letter-spacing: .06em;
+    max-width: 30ch;
+  }
+
+  button {
+    margin-top: 4px;
+    padding: 12px 30px;
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: .18em;
+    color: #04210f;
+    background: linear-gradient(180deg, #86efac, #4ade80);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px -8px rgba(74, 222, 128, .8);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(74, 222, 128, .9); }
+  button:active { transform: translateY(1px) scale(.98); }
+
+  .hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: #475569;
+  }
+
+  /* ---------- Wordle-specific ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 5px;
+    padding: 16px 14px 10px;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+  .tile {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(18px, 6vw, 26px);
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #e2e8f0;
+    border: 2px solid #334155;
+    border-radius: 8px;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .tile.filled { border-color: #475569; }
+  .tile.correct { background: #4ade80; border-color: #4ade80; color: #04210f; }
+  .tile.present { background: #facc15; border-color: #facc15; color: #3a2c00; }
+  .tile.absent  { background: #334155; border-color: #334155; color: #94a3b8; }
+  .tile.shake { animation: shake .32s ease; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .keys {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 12px 16px;
+    width: 100%;
+    max-width: 390px;
+    margin: 0 auto;
+  }
+  .krow {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+  }
+  button.key {
+    margin: 0;
+    padding: 13px 0;
+    flex: 1;
+    max-width: 42px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    color: #cbd5e1;
+    background: #131c2c;
+    border: 1px solid #1e293b;
+    border-radius: 7px;
+    box-shadow: none;
+    cursor: pointer;
+  }
+  button.key.wide {
+    flex: 1.7;
+    max-width: 66px;
+    font-size: 11px;
+    letter-spacing: .04em;
+  }
+  button.key:hover { background: #1e293b; }
+  button.key.correct { background: #4ade80; border-color: #4ade80; color: #04210f; }
+  button.key.present { background: #facc15; border-color: #facc15; color: #3a2c00; }
+  button.key.absent  { background: #334155; border-color: #334155; color: #64748b; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hud">
+    <div>SCORE<b id="score">0</b></div>
+    <div>BEST<b id="best">—</b></div>
+  </div>
+
+  <div class="board">
+    <div class="grid" id="grid"></div>
+    <div class="keys" id="keys"></div>
+    <button class="pause-btn" id="pauseBtn" aria-label="Pause">❚❚</button>
+    <div class="overlay show" id="overlay">
+      <h1 id="ovTitle">WORDLE</h1>
+      <p id="ovText">Guess the 5-letter word in six tries. Green = right spot, yellow = right letter, gray = absent.</p>
+      <button id="ovBtn">PLAY</button>
+      <button id="ovBtn2" style="display:none">RESTART</button>
+    </div>
+  </div>
+
+  <p class="hint">TYPE OR TAP &nbsp;·&nbsp; ENTER GUESS &nbsp;·&nbsp; BACKSPACE &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; R RESTART</p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Setup ---------- */
+  const WORDS = [
+    'about','above','acute','admit','adopt','after','again','agent','agree','ahead',
+    'alarm','album','alert','alien','align','alive','allow','alone','along','alter',
+    'amber','angel','anger','angle','angry','ankle','apple','apply','arena','argue',
+    'arise','armor','aroma','array','arrow','aside','asset','atlas','audio','avoid',
+    'awake','award','aware','bacon','badge','baker','basic','basin','basis','batch',
+    'beach','beard','beast','begin','being','belly','below','bench','berry','birth',
+    'black','blade','blame','blank','blast','blaze','bleed','blend','bless','blind',
+    'block','blood','bloom','board','boast','bonus','boost','booth','bound','brain',
+    'brand','brave','bread','break','breed','brick','bride','brief','bring','broad',
+    'broke','brook','brown','brush','build','built','bunch','burst','buyer','cable',
+    'camel','canal','candy','cargo','carry','catch','cause','chain','chair','chalk',
+    'champ','chaos','charm','chart','chase','cheap','cheat','check','cheek','chess',
+    'chest','chief','child','chill','china','chord','civic','civil','claim','clash',
+    'class','clean','clear','clerk','click','climb','clock','close','cloth','cloud',
+    'coach','coast','cobra','color','comet','coral','couch','cough','could','count',
+    'court','cover','crack','craft','crane','crash','crazy','cream','creek','crime',
+    'crown','crude','cruel','crush','curve','cycle','daily','dance','darts','dealt',
+    'death','debut','decay','delay','delta','demon','dense','depth','derby','diary',
+    'dirty','ditch','doubt','dozen','draft','drain','drama','drank','drawn','dream',
+    'dress','drift','drill','drink','drive','drove','drunk','eager','eagle','early',
+    'earth','eight','elbow','elder','elect','elite','empty','enemy','enjoy','enter',
+    'entry','equal','error','essay','event','every','exact','exile','extra','faint',
+    'fairy','faith','false','fancy','fatal','fault','feast','fever','fiber','field',
+    'fifth','fifty','fight','final','first','fixed','flame','flash','fleet','flesh',
+    'float','flock','flood','floor','flour','fluid','focus','force','forge','forth',
+    'forty','forum','found','frame','frank','fresh','front','frost','fruit','funny',
+    'ghost','giant','given','glass','globe','glory','gloss','glove','goose','grade',
+    'grain','grand','grant','grape','grass','grave','great','green','greet','grill',
+    'gross','group','grove','grown','guard','guess','guest','guide','guilt','habit',
+    'happy','hardy','harsh','haste','hatch','heart','heavy','hedge','hello','honey',
+    'horse','hotel','house','human','humor','hurry','ideal','image','index','inner',
+    'input','irony','issue','ivory','jelly','jewel','joint','jolly','judge','juice',
+    'kneel','knife','knock','known','label','large','laser','later','laugh','layer',
+    'learn','lease','least','leave','legal','lemon','level','light','limit','linen',
+    'liver','local','lodge','logic','loose','lower','loyal','lucky','lunch','lyric',
+    'magic','major','maker','mango','maple','march','match','maybe','mayor','medal',
+    'media','melon','mercy','merge','merit','metal','meter','might','minor','minus',
+    'model','money','month','moral','motor','mount','mouse','mouth','movie','music',
+    'naive','naked','nerve','never','night','noble','noise','north','noted','novel',
+    'nurse','nylon','oasis','occur','ocean','offer','often','olive','onion','opera',
+    'order','organ','other','ought','ounce','outer','owner','paint','panel','panic',
+    'paper','party','pasta','paste','patch','patio','pause','peace','peach','pearl',
+    'penny','phase','phone','photo','piano','piece','pilot','pinch','pitch','pizza',
+    'place','plain','plane','plant','plate','plaza','plead','pluck','point','polar',
+    'porch','pound','power','press','price','pride','prime','print','prior','prize',
+    'probe','prone','proof','prose','proud','prove','punch','pupil','purse','queen',
+    'queer','query','quest','queue','quick','quiet','quilt','quite','quota','quote',
+    'rabid','racer','radar','radio','raise','rally','ranch','range','rapid','ratio',
+    'reach','react','ready','realm','rebel','refer','reign','relax','relay','renew',
+    'repay','reply','rider','ridge','rifle','right','rigid','rival','river','roast',
+    'robin','rocky','roman','rough','round','route','royal','rugby','ruler','rural',
+    'saint','salad','salon','salsa','sauce','scale','scare','scene','scent','scope',
+    'score','scout','scrap','screw','seize','sense','serve','seven','shade','shaft',
+    'shake','shall','shame','shape','share','shark','sharp','sheep','sheet','shelf',
+    'shell','shift','shine','shirt','shock','shore','short','shout','shown','sight',
+    'silky','since','sixth','sixty','skill','skirt','skull','slate','sleep','slice',
+    'slide','slope','small','smart','smell','smile','smoke','snack','snake','sneak',
+    'solar','solid','solve','sorry','sound','south','space','spare','spark','speak',
+    'speed','spell','spend','spice','spine','spite','split','spoke','spoon','sport',
+    'spray','squad','stack','staff','stage','stair','stake','stale','stamp','stand',
+    'stare','start','state','steak','steal','steam','steel','steep','steer','stern',
+    'stick','stiff','still','sting','stock','stone','stood','stool','store','storm',
+    'story','stove','strap','straw','strip','stuck','study','stuff','style','sugar',
+    'suite','sunny','super','surge','swamp','swear','sweat','sweep','sweet','swift',
+    'swing','sword','syrup','table','taste','teach','teeth','tempo','thank','theft',
+    'theme','there','thick','thief','thing','think','third','thorn','three','threw',
+    'throw','thumb','tiger','tight','timer','title','toast','today','token','tonic',
+    'tooth','topic','total','touch','tough','tower','toxic','trace','track','trade',
+    'trail','train','trait','trash','treat','trend','trial','tribe','trick','troop',
+    'truck','truly','trunk','trust','truth','tumor','turbo','twice','uncle','under',
+    'unite','unity','until','upper','upset','urban','usage','usual','valid','value',
+    'vapor','vegan','venue','verse','video','villa','vinyl','virus','visit','vital',
+    'vivid','vocal','vodka','voice','voter','wagon','waste','watch','water','weary',
+    'weave','wedge','weigh','weird','whale','wheat','wheel','where','which','while',
+    'white','whole','widow','width','witch','woman','women','words','world','worry',
+    'worse','worst','worth','would','wound','write','wrong','yacht','yeast','yield',
+    'young','youth','zebra'
+  ];
+  const WORD_LEN = 5;
+  const MAX_GUESSES = 6;
+  const KEY_ROWS = [
+    'qwertyuiop'.split(''),
+    'asdfghjkl'.split(''),
+    ['enter'].concat('zxcvbnm'.split(''), ['back'])
+  ];
+
+  const overlay  = document.getElementById('overlay');
+  const ovTitle  = document.getElementById('ovTitle');
+  const ovText   = document.getElementById('ovText');
+  const ovBtn    = document.getElementById('ovBtn');
+  const ovBtn2   = document.getElementById('ovBtn2');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const scoreEl  = document.getElementById('score');
+  const bestEl   = document.getElementById('best');
+  const gridEl   = document.getElementById('grid');
+  const keysEl   = document.getElementById('keys');
+
+  /* ---------- State ---------- */
+  let answer;        // hidden 5-letter word
+  let guesses;       // array of { word, result }
+  let current;       // string of letters typed so far
+  let wins;          // number of games won (score)
+  let keyStatus;     // { letter: 'correct' | 'present' | 'absent' }
+  let state = 'idle'; // 'idle' | 'playing' | 'paused' | 'over'
+
+  let best = 999; // fewest guesses to win (lower is better); sentinel = never won
+  try {
+    const v = parseInt(localStorage.getItem('wordle.best') || '', 10);
+    if (v >= 1 && v <= MAX_GUESSES) best = v;
+  } catch (e) {}
+  bestEl.textContent = best >= 999 ? '—' : best;
+
+  /* ---------- Helpers ---------- */
+  function showOverlay(title, text, btnLabel, btn2Label) {
+    ovTitle.textContent = title;
+    ovText.textContent = text;
+    ovBtn.textContent = btnLabel;
+    if (btn2Label) { ovBtn2.textContent = btn2Label; ovBtn2.style.display = ''; }
+    else { ovBtn2.style.display = 'none'; }
+    overlay.classList.add('show');
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove('show');
+  }
+
+  function updatePauseBtn() { pauseBtn.classList.toggle('show', state === 'playing'); }
+
+  function updateHud() {
+    scoreEl.textContent = wins;
+    bestEl.textContent = best >= 999 ? '—' : best;
+  }
+
+  /* ---------- Build grid ---------- */
+  const tiles = [];
+  for (let r = 0; r < MAX_GUESSES; r++) {
+    const row = [];
+    for (let c = 0; c < WORD_LEN; c++) {
+      const t = document.createElement('div');
+      t.className = 'tile';
+      gridEl.appendChild(t);
+      row.push(t);
+    }
+    tiles.push(row);
+  }
+
+  /* ---------- Build keyboard ---------- */
+  const keyEls = {};
+  for (const rowKeys of KEY_ROWS) {
+    const row = document.createElement('div');
+    row.className = 'krow';
+    for (const k of rowKeys) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'key';
+      b.dataset.k = k;
+      if (k === 'enter') { b.className = 'key wide'; b.textContent = 'Enter'; b.addEventListener('click', () => { b.blur(); submit(); }); }
+      else if (k === 'back') { b.className = 'key wide'; b.textContent = 'Del'; b.addEventListener('click', () => { b.blur(); backspace(); }); }
+      else {
+        b.textContent = k.toUpperCase();
+        keyEls[k] = b;
+        b.addEventListener('click', () => { b.blur(); typeLetter(k); });
+      }
+      row.appendChild(b);
+    }
+    keysEl.appendChild(row);
+  }
+
+  /* ---------- Rendering ---------- */
+  function renderGrid() {
+    for (let r = 0; r < MAX_GUESSES; r++) {
+      for (let c = 0; c < WORD_LEN; c++) {
+        const t = tiles[r][c];
+        t.classList.remove('filled', 'correct', 'present', 'absent');
+        if (r < guesses.length) {
+          const g = guesses[r];
+          t.textContent = g.word[c].toUpperCase();
+          t.classList.add(g.result[c]);
+        } else if (r === guesses.length && c < current.length) {
+          t.textContent = current[c].toUpperCase();
+          t.classList.add('filled');
+        } else {
+          t.textContent = '';
+        }
+      }
+    }
+  }
+
+  function renderKeys() {
+    for (const k in keyEls) {
+      const b = keyEls[k];
+      b.classList.remove('correct', 'present', 'absent');
+      if (keyStatus[k] === 'correct') b.classList.add('correct');
+      else if (keyStatus[k] === 'present') b.classList.add('present');
+      else if (keyStatus[k] === 'absent') b.classList.add('absent');
+    }
+  }
+
+  /* ---------- Game logic ---------- */
+  function pickWord() {
+    answer = WORDS[(Math.random() * WORDS.length) | 0];
+  }
+
+  function evaluate(guess) {
+    const result = Array(WORD_LEN).fill('absent');
+    const remaining = {};
+    for (let i = 0; i < WORD_LEN; i++) {
+      if (guess[i] !== answer[i]) remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+    }
+    for (let i = 0; i < WORD_LEN; i++) {
+      if (guess[i] === answer[i]) { result[i] = 'correct'; continue; }
+      if (remaining[guess[i]]) { result[i] = 'present'; remaining[guess[i]]--; }
+    }
+    return result;
+  }
+
+  function absorbKeys(guess, result) {
+    const rank = { correct: 3, present: 2, absent: 1 };
+    for (let i = 0; i < WORD_LEN; i++) {
+      const ch = guess[i];
+      const r = result[i];
+      if (!keyStatus[ch] || rank[r] > rank[keyStatus[ch]]) keyStatus[ch] = r;
+    }
+  }
+
+  function typeLetter(ch) {
+    if (state !== 'playing') return;
+    if (current.length >= WORD_LEN) return;
+    current += ch;
+    renderGrid();
+  }
+
+  function backspace() {
+    if (state !== 'playing') return;
+    current = current.slice(0, -1);
+    renderGrid();
+  }
+
+  function submit() {
+    if (state !== 'playing') return;
+    if (current.length < WORD_LEN) { shakeRow(guesses.length); return; }
+    if (WORDS.indexOf(current) === -1) { shakeRow(guesses.length); return; }
+
+    const result = evaluate(current);
+    absorbKeys(current, result);
+    guesses.push({ word: current, result });
+    current = '';
+    renderGrid();
+    renderKeys();
+
+    const won = guesses[guesses.length - 1].word === answer;
+    if (won) { endGame(true); return; }
+    if (guesses.length >= MAX_GUESSES) { endGame(false); return; }
+  }
+
+  function shakeRow(r) {
+    if (r >= MAX_GUESSES) return;
+    tiles[r].forEach((t) => t.classList.add('shake'));
+    setTimeout(() => tiles[r].forEach((t) => t.classList.remove('shake')), 340);
+  }
+
+  function endGame(won) {
+    state = 'over';
+    updatePauseBtn();
+    if (won) {
+      wins += 1;
+      const used = guesses.length;
+      if (used < best) {
+        best = used;
+        try { localStorage.setItem('wordle.best', String(best)); } catch (e) {}
+      }
+      updateHud();
+      showOverlay(
+        'YOU WIN',
+        `Solved in ${used} guess${used === 1 ? '' : 'es'}. Best: ${best}.`,
+        'PLAY AGAIN'
+      );
+    } else {
+      updateHud();
+      showOverlay(
+        'GAME OVER',
+        `The word was ${answer.toUpperCase()}.`,
+        'PLAY AGAIN'
+      );
+    }
+  }
+
+  function start() {
+    pickWord();
+    guesses = [];
+    current = '';
+    keyStatus = {};
+    state = 'playing';
+    hideOverlay();
+    updatePauseBtn();
+    updateHud();
+    renderGrid();
+    renderKeys();
+  }
+
+  function togglePause() {
+    if (state === 'playing') {
+      state = 'paused';
+      showOverlay('PAUSED', 'The word is hidden. Press resume to keep guessing.', 'RESUME', 'RESTART');
+    } else if (state === 'paused') {
+      state = 'playing';
+      hideOverlay();
+    }
+    updatePauseBtn();
+  }
+
+  /* ---------- Input ---------- */
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+
+    if (k === ' ' || k === 'Spacebar' || k.startsWith('Arrow') || k === 'Backspace') e.preventDefault();
+
+    if (k === 'r' || k === 'R') { start(); return; }
+
+    if (k === ' ' || k === 'Spacebar') {
+      if (state === 'playing' || state === 'paused') togglePause();
+      else start();
+      return;
+    }
+
+    if (k === 'p' || k === 'P') {
+      if (state === 'playing' || state === 'paused') togglePause();
+      return;
+    }
+
+    if (state !== 'playing') return;
+
+    if (k === 'Enter') { submit(); return; }
+    if (k === 'Backspace') { backspace(); return; }
+    if (/^[a-zA-Z]$/.test(k)) typeLetter(k.toLowerCase());
+  });
+
+  ovBtn.addEventListener('click', () => {
+    ovBtn.blur();
+    if (state === 'paused') togglePause();
+    else start();
+  });
+
+  ovBtn2.addEventListener('click', () => {
+    ovBtn2.blur();
+    start();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    pauseBtn.blur();
+    if (state === 'playing') togglePause();
+  });
+
+  // Auto-pause when the tab loses focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') togglePause();
+  });
+
+  /* ---------- Boot ---------- */
+  wins = 0;
+  guesses = [];
+  current = '';
+  keyStatus = {};
+  updateHud();
+  renderGrid();
+  renderKeys();
+  state = 'idle';
+  updatePauseBtn();
+})();
+</script>
+<style>
+.sound-btn{position:fixed;top:12px;left:12px;width:38px;height:38px;border:1px solid #1e293b;border-radius:10px;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:16px;line-height:1;cursor:pointer;z-index:99;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.sound-btn:hover{background:rgba(30,41,59,.8)}
+</style>
+<button class="sound-btn" id="soundBtn" aria-label="Toggle sound">♪</button>
+<script>
+(function () {
+  "use strict";
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, master = null, musicGain = null, noiseBuf = null;
+  var muted = false, musicOn = false, timer = null, step = 0, nextT = 0;
+
+  var LEAD = [698.44,830.59,1046.48,830.59,698.44,830.59,1046.48,830.59,1108.7,1046.48,830.59,783.97,698.44,0,698.44,0];
+  var BASS = [174.61,261.62,174.61,0,174.61,261.62,174.61,0,174.61,261.62,174.61,0,174.61,261.62,174.61,0];
+  var STEP = 0.13;
+
+  try { muted = localStorage.getItem('arcade.muted') === '1'; } catch (e) {}
+
+  function ensureCtx() {
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.6;
+      master.connect(ctx.destination);
+      musicGain = ctx.createGain();
+      musicGain.gain.value = 0.5;
+      musicGain.connect(master);
+      var n = Math.floor(ctx.sampleRate * 0.04);
+      noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  function note(freq, t, dur, type, vol) {
+    if (!freq) return;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  function hat(t) {
+    var s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+    var g = ctx.createGain(); g.gain.value = 0.05;
+    s.connect(hp); hp.connect(g); g.connect(musicGain);
+    s.start(t);
+  }
+
+  function schedule(i, t) {
+    var k = i % LEAD.length;
+    note(LEAD[k], t, STEP * 0.9, 'sawtooth', 0.16);
+    note(BASS[k], t, STEP * 0.95, 'sine', 0.2);
+    hat(t);
+  }
+
+  function tick() {
+    while (nextT < ctx.currentTime + 0.12) {
+      schedule(step, nextT);
+      step++;
+      nextT += STEP;
+    }
+  }
+
+  function startMusic() {
+    if (musicOn) return;
+    ensureCtx();
+    musicOn = true;
+    nextT = ctx.currentTime + 0.05;
+    step = 0;
+    timer = setInterval(tick, 25);
+  }
+
+  function stopMusic() {
+    if (timer) { clearInterval(timer); timer = null; }
+    musicOn = false;
+    step = 0;
+  }
+
+  function setMuted(m) {
+    muted = m;
+    try { localStorage.setItem('arcade.muted', m ? '1' : '0'); } catch (e) {}
+    if (master) master.gain.setTargetAtTime(m ? 0 : 0.6, ctx.currentTime, 0.02);
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = m ? '🔇' : '♪';
+  }
+
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    if (pb && pb.classList.contains('show')) { if (!musicOn) startMusic(); }
+    else if (musicOn) stopMusic();
+  }
+
+  function wire() {
+    var sb = document.getElementById('soundBtn');
+    if (sb) sb.addEventListener('click', function () { ensureCtx(); setMuted(!muted); });
+    window.addEventListener('pointerdown', ensureCtx);
+    window.addEventListener('keydown', ensureCtx);
+    var pb = document.getElementById('pauseBtn');
+    if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = muted ? '🔇' : '♪';
+    sync();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+<button class="rules-btn" id="rulesBtn">RULES</button>
+<div class="rules-panel" id="rulesPanel">
+  <div class="rules-card">
+    <h2>HOW TO PLAY</h2>
+    <p id="rulesText"></p>
+    <button id="rulesClose">BACK</button>
+  </div>
+</div>
+<style>
+.rules-btn{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:10px 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.18em;color:#cbd5e1;background:rgba(15,23,42,.85);border:1px solid #334155;border-radius:999px;cursor:pointer;display:none;z-index:60}
+.rules-btn.show{display:block}
+.rules-btn:hover{background:rgba(30,41,59,.9)}
+.rules-panel{position:fixed;inset:0;background:rgba(5,9,16,.94);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rules-panel.show{display:flex}
+.rules-card{width:min(88vw,440px);max-height:80vh;overflow:auto;background:#0b1220;border:1px solid #1e293b;border-radius:16px;padding:24px;box-shadow:0 30px 60px -25px #000;text-align:center}
+.rules-card h2{margin:0 0 14px;font-size:14px;letter-spacing:.24em;color:#4ade80}
+.rules-card p{margin:0 0 20px;font-size:13px;line-height:1.9;color:#cbd5e1;letter-spacing:.03em;text-align:left}
+.rules-card button{margin:0;padding:10px 26px;font:inherit;font-size:13px;letter-spacing:.18em;color:#04210f;background:linear-gradient(180deg,#86efac,#4ade80);border:0;border-radius:999px;cursor:pointer;box-shadow:0 8px 24px -8px rgba(74,222,128,.8)}
+</style>
+<script>
+(function () {
+  "use strict";
+  var RULES = "Guess the hidden 5-letter word in 6 tries. After each guess: green means a correct letter in the right spot, yellow means a correct letter in the wrong spot, and gray means the letter isn't in the word.";
+  var btn = document.getElementById('rulesBtn');
+  var panel = document.getElementById('rulesPanel');
+  var text = document.getElementById('rulesText');
+  var close = document.getElementById('rulesClose');
+  if (text) text.textContent = RULES;
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      if (panel && panel.classList.contains('show')) { panel.classList.remove('show'); return; }
+      try { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true, cancelable: true })); } catch (err) {}
+    }
+  });
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    var title = document.getElementById('ovTitle');
+    var paused = pb && !pb.classList.contains('show') && title && /PAUSED/i.test(title.textContent || '');
+    if (btn) btn.classList.toggle('show', !!paused);
+    var ov = document.getElementById('overlay');
+    if (ov && !ov.classList.contains('show') && panel) panel.classList.remove('show');
+  }
+  var pb = document.getElementById('pauseBtn');
+  if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+  var ov = document.getElementById('overlay');
+  if (ov) new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['class'] });
+  if (btn) btn.addEventListener('click', function () { if (panel) panel.classList.add('show'); });
+  if (close) close.addEventListener('click', function () { if (panel) panel.classList.remove('show'); });
+  if (panel) panel.addEventListener('click', function (e) { if (e.target === panel) panel.classList.remove('show'); });
+  sync();
+})();
+</script>
+<style>
+#score{display:inline-block}
+#score.pulse{animation:scorePulse .45s ease}
+@keyframes scorePulse{
+  0%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+  40%{transform:scale(1.4);text-shadow:0 0 26px rgba(74,222,128,.95)}
+  100%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+}
+</style>
+<script>
+(function () {
+  "use strict";
+  var el = document.getElementById('score');
+  if (!el) return;
+  var last = parseInt(el.textContent, 10) || 0;
+  var mo = new MutationObserver(function () {
+    var cur = parseInt(el.textContent, 10) || 0;
+    if (cur > last) {
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+    }
+    last = cur;
+  });
+  mo.observe(el, { childList: true, characterData: true, subtree: true });
+})();
+</script>
+</body>
+</html>

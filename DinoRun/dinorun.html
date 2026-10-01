@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Dino Run</title>
+<style>
+  *{box-sizing:border-box;} html,body{height:100%;}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#3a1a0a 0%,#0d0502 65%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#f5e0c8;padding:16px;-webkit-tap-highlight-color:transparent;}
+  .wrap{width:min(88vw,480px);display:flex;flex-direction:column;gap:12px;}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.16em;color:#a87a5a;}
+  .hud b{color:#fb923c;font-size:20px;font-weight:700;letter-spacing:.02em;margin-left:6px;}
+  .hud button{background:transparent;border:1px solid #3a2010;color:#fb923c;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:14px;}
+  .stage{width:100%;aspect-ratio:16/9;border-radius:16px;overflow:hidden;background:#120802;box-shadow:0 0 0 1px #2a1608,0 30px 60px -25px #000;}
+  canvas{display:block;width:100%;height:100%;}
+  .hint{color:#a87a5a;font-size:11px;text-align:center;line-height:1.6;}
+  button.big{font-family:inherit;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;letter-spacing:.05em;
+    background:#fb923c;color:#2a1202;cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>DISTANCE <b id="score">0</b></span><span>BEST <b id="best">—</b></span><button id="mbtn" onclick="toggleMusic()">🔊</button></div>
+  <div class="stage"><canvas id="cv" width="480" height="270"></canvas></div>
+  <div class="hint">Espace / clic = sauter. Évite les cactus.</div>
+  <button class="big" id="reset">🦖 Rejouer</button>
+</div>
+<script>
+"use strict";
+const NOTE={C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,C6:1046.5};
+const MELODY=['C5','E5','G5','C6','G5','E5','C5','E5']; const BPM=130;
+let actx=null,musTimer=null,musOn=false;
+function beep(f,t,d){const o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d);}
+function startMusic(){if(musOn)return;musOn=true;if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();const step=60/BPM;let i=0;musTimer=setInterval(()=>{beep(NOTE[MELODY[i%MELODY.length]],actx.currentTime+.02,step*.8);i++;},step*1000);}
+function stopMusic(){musOn=false;clearInterval(musTimer);musTimer=null;}
+function toggleMusic(){if(musOn)stopMusic();else startMusic();const b=document.getElementById('mbtn');if(b)b.textContent=musOn?'🔊':'🔇';}
+document.addEventListener('pointerdown',function first(){startMusic();document.removeEventListener('pointerdown',first);});
+const $=s=>document.querySelector(s);
+const cv=$('#cv'), ctx=cv.getContext('2d');
+const W=cv.width, H=cv.height, GROUND=H-40;
+let best=0; try{ best=parseInt(localStorage.getItem('dinorun.best')||'0',10)||0; }catch(e){}
+let dino, cacti, speed, dist, over;
+function reset(){
+  dino={x:70,y:GROUND-40,w:28,h:40,vy:0};
+  cacti=[]; speed=5; dist=0; over=false;
+  $('#best').textContent=best?best:'—';
+  loop();
+}
+function jump(){ if(dino.y>=GROUND-40) dino.vy=-11; }
+function spawn(){ if(Math.random()<0.02){ const h=30+Math.random()*20, w=16+Math.random()*10; cacti.push({x:W+10,y:GROUND-h,w,h}); } }
+function step(){
+  dino.vy+=0.7; dino.y+=dino.vy;
+  if(dino.y>GROUND-40){ dino.y=GROUND-40; dino.vy=0; }
+  speed=5+dist*0.0012;
+  spawn();
+  cacti.forEach(c=>c.x-=speed);
+  cacti=cacti.filter(c=>c.x+c.w>0);
+  dist+=speed*0.5;
+  for(const c of cacti){ if(dino.x+dino.w>c.x && dino.x<c.x+c.w && dino.y+dino.h>c.y){ over=true; break; } }
+  if(over && Math.floor(dist)>best){ best=Math.floor(dist); try{ localStorage.setItem('dinorun.best',String(best)); }catch(e){} $('#best').textContent=best; }
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a0e06'; ctx.fillRect(0,GROUND,W,H-GROUND);
+  ctx.fillStyle='#2a1608'; ctx.fillRect(0,GROUND-2,W,2);
+  ctx.fillStyle='#a78bfa'; ctx.fillRect(dino.x,dino.y,dino.w,dino.h);
+  ctx.fillStyle='#1e1b4b'; ctx.fillRect(dino.x+18,dino.y-6,6,6);
+  ctx.fillStyle='#22c55e'; cacti.forEach(c=>ctx.fillRect(c.x,c.y,c.w,c.h));
+  ctx.fillStyle='#a87a5a'; ctx.font='14px monospace'; ctx.textAlign='right'; ctx.fillText('SCORE '+Math.floor(dist),W-12,20);
+  if(over){ ctx.fillStyle='#f87171'; ctx.font='bold 26px monospace'; ctx.textAlign='center'; ctx.fillText('GAME OVER',W/2,H/2); }
+}
+function loop(){ step(); draw(); $('#score').textContent=Math.floor(dist); if(!over) requestAnimationFrame(loop); }
+document.addEventListener('keydown',e=>{ if(e.code==='Space'){ e.preventDefault(); if(over) reset(); else jump(); } });
+cv.addEventListener('pointerdown',()=>{ if(over) reset(); else jump(); });
+$('#reset').onclick=reset;
+reset();
+</script>
+</body>
+</html>

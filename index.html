@@ -1,0 +1,2437 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="minimal">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Jeux</title>
+<style>
+  :root, [data-theme="minimal"]{
+    --bg0:#f6f7f9; --bg1:#eceff3;
+    --card:#ffffff; --card2:#f2f4f7;
+    --txt:#1f2430; --dim:#6b7280; --line:#e5e7eb;
+    --track:#eceff3; --fill:linear-gradient(90deg,#6b7280,#3b4252);
+    --accent:#4f6ef7; --accent-ink:#ffffff;
+    --gem:#7c6ff0; --gem-ink:#ffffff;
+    --btn:#ffffff; --btn-ink:#1f2430; --btn-border:#e5e7eb;
+    --shadow:0 1px 3px rgba(15,23,42,.07);
+    --overlay:rgba(15,23,42,.35);
+    --radius:12px; --radius-lg:16px;
+    --gold:#f0a23b; --purple:#9a5cf0; --blue:#4f7cf0; --gray:#9aa1ab;
+    --green:#2fb27a; --red:#e5484d; --cyan:#3db7d0;
+    --pink:#f0648f; --pink2:#e5487d;
+    --rN:#9aa1ab; --rR:#4f7cf0; --rSR:#9a5cf0; --rSSR:#e8972f;
+    --rNbg:linear-gradient(160deg,#ffffff,#f2f4f7); --rNbd:#e5e7eb;
+    --rRbg:linear-gradient(160deg,#f3f7ff,#e3ecff); --rRbd:#c9d8ff;
+    --rSRbg:linear-gradient(160deg,#f8f3ff,#ecdcff); --rSRbd:#e0c8ff;
+    --rSSRbg:linear-gradient(160deg,#fff8ec,#ffe6c2); --rSSRbd:#ffd38f;
+    --rEX:#e0288a; --rEXbg:linear-gradient(160deg,#fff0f7,#ffd9e9); --rEXbd:#ff8ec4;
+  }
+  [data-theme="dark"]{
+    --bg0:#12151c; --bg1:#1b1f29;
+    --card:#1e222c; --card2:#262b37;
+    --txt:#e6e8ee; --dim:#8a93a6; --line:#2c3240;
+    --track:#2a2f3c; --fill:linear-gradient(90deg,#5b8cff,#7ea2ff);
+    --accent:#5b8cff; --accent-ink:#0b1020;
+    --gem:#8f7bff; --gem-ink:#0d0a1e;
+    --btn:#1e222c; --btn-ink:#e6e8ee; --btn-border:#2c3240;
+    --shadow:0 4px 18px rgba(0,0,0,.35);
+    --overlay:rgba(0,0,0,.6);
+    --radius:12px; --radius-lg:16px;
+    --gold:#f0b64a; --purple:#b08aff; --blue:#6a98ff; --gray:#9aa1ab;
+    --green:#43c08a; --red:#ff6b7a; --cyan:#4fc3e0;
+    --pink:#ff7ba3; --pink2:#ff5c8a;
+    --rN:#9aa1ab; --rR:#6a98ff; --rSR:#b08aff; --rSSR:#f0b64a;
+    --rNbg:linear-gradient(160deg,#1e222c,#181c24); --rNbd:#2c3240;
+    --rRbg:linear-gradient(160deg,#16213a,#10182c); --rRbd:#1f3a63;
+    --rSRbg:linear-gradient(160deg,#231a3d,#171030); --rSRbd:#35255c;
+    --rSSRbg:linear-gradient(160deg,#38260f,#241806); --rSSRbd:#5a3c10;
+    --rEX:#ff5ca8; --rEXbg:linear-gradient(160deg,#3a1230,#240a1e); --rEXbd:#a0306a;
+  }
+  [data-theme="kawaii"]{
+    --bg0:#fff4ea; --bg1:#ffdfd0;
+    --card:#fffdf9; --card2:#fff3e8;
+    --txt:#5a4636; --dim:#b69276; --line:#ffe0cf;
+    --track:#ffe6d6; --fill:linear-gradient(90deg,#ff8fb1,#c9a2ff);
+    --accent:#ff8fb1; --accent-ink:#ffffff;
+    --gem:#c69cff; --gem-ink:#4a2470;
+    --btn:#ffffff; --btn-ink:#5a4636; --btn-border:#ffe0cf;
+    --shadow:0 8px 24px rgba(255,150,120,.14);
+    --overlay:rgba(255,214,196,.55);
+    --radius:18px; --radius-lg:22px;
+    --gold:#ffb84d; --purple:#c69cff; --blue:#7fb5f0; --gray:#bca994;
+    --green:#6fc895; --red:#ff7a8c; --cyan:#8fd0e8;
+    --pink:#ff8fb1; --pink2:#ff6f9c;
+    --rN:#bca994; --rR:#6fa8f0; --rSR:#c08fff; --rSSR:#ff9e2c;
+    --rNbg:linear-gradient(160deg,#fffdf8,#f5eadd); --rNbd:#e9d9c8;
+    --rRbg:linear-gradient(160deg,#f3f9ff,#dcecff); --rRbd:#cfe4ff;
+    --rSRbg:linear-gradient(160deg,#f9f1ff,#ead7ff); --rSRbd:#e6d2ff;
+    --rSSRbg:linear-gradient(160deg,#fff7e2,#ffe2b0); --rSSRbd:#ffd9a0;
+    --rEX:#ff4fa0; --rEXbg:linear-gradient(160deg,#fff0f7,#ffe0ee); --rEXbd:#ffa0cc;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:"Hiragino Maru Gothic ProN","Yu Gothic","Arial Rounded MT Bold","Trebuchet MS","Segoe UI",sans-serif;
+    background:radial-gradient(130% 90% at 50% 0%,var(--bg1) 0%,var(--bg0) 60%);
+    color:var(--txt);-webkit-tap-highlight-color:transparent;}
+  #app{max-width:1020px;margin:0 auto;padding:10px 12px 40px;position:relative;z-index:1;}
+
+  .deco{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;display:none;}
+  [data-theme="kawaii"] .deco{display:block;}
+  .deco span{position:absolute;bottom:-60px;font-size:26px;opacity:.45;animation:floatUp 16s linear infinite;}
+  @keyframes floatUp{to{transform:translateY(-120vh) rotate(340deg);}}
+
+  /* ---------- Top bar ---------- */
+  .topbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0 12px;}
+  .brand{font-weight:800;letter-spacing:1px;font-size:19px;color:var(--txt);margin-right:auto;}
+  [data-theme="kawaii"] .brand{font-weight:900;color:transparent;
+    background:linear-gradient(90deg,var(--pink2),var(--purple),var(--gold));
+    -webkit-background-clip:text;background-clip:text;}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;
+    padding:6px 11px;display:flex;align-items:center;gap:6px;font-size:13px;box-shadow:var(--shadow);}
+  .chip b{color:var(--accent);}
+  .chip .ico{font-size:15px;}
+  .chip.gear{cursor:pointer;border-style:dashed;}
+  .energybar{width:60px;height:8px;background:var(--track);border-radius:999px;overflow:hidden;}
+  .energybar i{display:block;height:100%;background:var(--fill);border-radius:999px;}
+
+  /* ---------- Tabs ---------- */
+  .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;margin-bottom:12px;}
+  .tab{flex:0 0 auto;background:var(--card);border:1px solid var(--line);color:var(--dim);
+    padding:8px 13px;border-radius:999px;cursor:pointer;font-size:13px;font-weight:700;letter-spacing:.3px;
+    white-space:nowrap;transition:transform .1s;}
+  .tab.active{background:var(--accent);color:var(--accent-ink);border-color:transparent;}
+
+  /* ---------- Cards / panels ---------- */
+  .grid{display:grid;gap:12px;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--shadow);}
+  .panel h2{margin:0 0 10px;font-size:16px;letter-spacing:.2px;color:var(--accent);}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  button{font-family:inherit;border:1px solid var(--btn-border);border-radius:10px;padding:10px 15px;cursor:pointer;
+    font-size:13px;font-weight:700;letter-spacing:.3px;background:var(--btn);color:var(--btn-ink);
+    transition:filter .1s,transform .1s;}
+  button:hover{filter:brightness(1.06);}
+  button:active{transform:translateY(1px);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;}
+  button.gem{background:var(--gem);color:var(--gem-ink);border-color:transparent;}
+  button.ghost{background:transparent;border:1px dashed var(--line);color:var(--dim);}
+  .bar{height:10px;background:var(--track);border-radius:999px;overflow:hidden;}
+  .bar i{display:block;height:100%;background:var(--fill);border-radius:999px;}
+  .muted{color:var(--dim);font-size:12px;}
+  .gold{color:var(--gold);} .green{color:var(--green);} .red{color:var(--red);}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.4px;}
+
+  /* ---------- Game tiles ---------- */
+  .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+  .gtile{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:13px;
+    text-align:center;cursor:pointer;box-shadow:var(--shadow);transition:transform .1s,border-color .1s;}
+  .gtile:hover{transform:translateY(-2px);border-color:var(--accent);}
+  .gtile .emoji{font-size:32px;}
+  .gtile .nm{font-weight:800;font-size:13px;margin-top:6px;}
+  .gtile .rt{font-size:11px;color:var(--dim);margin-top:3px;}
+
+  /* ---------- Rarity ---------- */
+  .N{color:var(--rN);} .R{color:var(--rR);} .SR{color:var(--rSR);} .SSR{color:var(--rSSR);}
+  .rN{border-color:var(--rNbd);background:var(--rNbg);}
+  .rR{border-color:var(--rRbd);background:var(--rRbg);}
+  .rSR{border-color:var(--rSRbd);background:var(--rSRbg);}
+  .rSSR{border-color:var(--rSSRbd);background:var(--rSSRbg);}
+  .EX{color:var(--rEX);}
+  .rEX{border-color:var(--rEXbd);background:var(--rEXbg);box-shadow:0 0 16px rgba(255,80,160,.35);}
+
+  /* ---------- Mascot / collection ---------- */
+  .mascots{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;}
+  .mascot{border-radius:var(--radius);padding:13px;text-align:center;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow);}
+  .mascot .em{font-size:38px;}
+  .mascot .nm{font-weight:800;font-size:12px;margin-top:5px;}
+  .mascot .stars{color:var(--gold);font-size:11px;letter-spacing:1px;}
+  .mascot .inf{font-size:10px;color:var(--dim);margin-top:4px;line-height:1.6;}
+  .mascot.locked{opacity:.5;filter:grayscale(.6);}
+
+  /* ---------- Leaderboard ---------- */
+  .lb{display:flex;flex-direction:column;gap:6px;}
+  .lbrow{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);
+    background:var(--card);border:1px solid var(--line);font-size:13px;box-shadow:var(--shadow);}
+  .lbrow.me{border-color:var(--accent);background:var(--card2);box-shadow:0 0 0 1px var(--accent) inset;}
+  .lbrow .rank{width:34px;font-weight:800;color:var(--dim);}
+  .lbrow .xp{margin-left:auto;color:var(--accent);font-weight:800;}
+
+  /* ---------- Modal ---------- */
+  #modal{position:fixed;inset:0;background:var(--overlay);display:none;align-items:center;
+    justify-content:center;z-index:50;padding:16px;}
+  #modal.open{display:flex;}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius-lg);
+    max-width:520px;width:100%;max-height:88vh;overflow:auto;padding:20px;box-shadow:var(--shadow);}
+  .mcard h2{margin:0 0 12px;font-size:18px;color:var(--accent);}
+  .pullgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .pcard{border-radius:var(--radius);padding:10px 4px;text-align:center;border:1px solid var(--line);
+    min-height:88px;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    transition:transform .3s;}
+  .pcard.back{color:transparent;border-color:var(--line);
+    background-image:repeating-linear-gradient(45deg,var(--card2) 0 8px,var(--card) 8px 16px);}
+  .pcard .em{font-size:26px;}
+  .pcard .nm{font-size:10px;font-weight:800;margin-top:3px;}
+  .pcard.ssr{animation:pop .5s;}
+  @keyframes pop{0%{transform:scale(.6);}60%{transform:scale(1.15);}100%{transform:scale(1);}}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--card);
+    border:1px solid var(--accent);color:var(--txt);padding:11px 18px;border-radius:999px;
+    font-size:13px;font-weight:700;z-index:60;display:none;max-width:90%;text-align:center;box-shadow:var(--shadow);}
+
+  .missions-list{display:flex;flex-direction:column;gap:8px;}
+  .mission{display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:var(--radius);
+    background:var(--card);border:1px solid var(--line);font-size:13px;box-shadow:var(--shadow);}
+  .mission .prog{color:var(--dim);font-size:11px;}
+  .mission .claim{margin-left:auto;}
+
+  .countdown{font-size:11px;color:var(--red);letter-spacing:.3px;font-weight:700;}
+  .hint{color:var(--dim);font-size:11px;line-height:1.6;}
+  table.rates{border-collapse:collapse;width:100%;font-size:12px;background:var(--card);border-radius:10px;overflow:hidden;}
+  table.rates td,table.rates th{border:1px solid var(--line);padding:6px 9px;text-align:left;}
+
+  /* ---------- Settings ---------- */
+  .seg{display:flex;gap:6px;flex-wrap:wrap;}
+  .seg button{flex:1;min-width:80px;padding:9px 10px;font-size:12px;}
+  .seg button.on{background:var(--accent);color:var(--accent-ink);border-color:transparent;}
+
+  /* ---------- Compagnon IA ---------- */
+  #companion{position:fixed;right:14px;bottom:14px;z-index:45;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+  #companion .bubble{background:var(--card);border:1px solid var(--accent);border-radius:14px;
+    padding:9px 13px;max-width:260px;font-size:12px;line-height:1.5;box-shadow:var(--shadow);display:none;}
+  #companion .bubble.visible{display:block;}
+  #companion .typing{display:none;color:var(--dim);font-size:11px;}
+  #companion .typing.on{display:block;}
+  #companion .avatar{width:54px;height:54px;border-radius:50%;background:var(--card);border:1px solid var(--accent);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;box-shadow:var(--shadow);}
+  #companion .avatar .status{position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;
+    background:var(--green);border:2px solid var(--bg0);}
+  #companion .avatar .status.off{background:var(--red);}
+  #companion .cava-host{display:block;width:44px;height:44px;line-height:0;}
+  #companion .cava-host svg{width:100%;height:100%;display:block;overflow:visible;}
+  .cava{display:block;width:100%;height:100%;overflow:visible;}
+  .cava .bodyg{animation:breathe 3.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 92%;}
+  @keyframes breathe{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-2.5px) scale(1.02);}}
+  .cava .head{transform-box:fill-box;transform-origin:50% 60%;transition:transform .35s ease;}
+  .cava.mood-taquine .head{transform:rotate(-5deg) translateX(1px);}
+  .cava .eye{animation:blink 4.2s infinite;transform-box:fill-box;transform-origin:center;}
+  @keyframes blink{0%,91%,100%{transform:scaleY(1);}94%,97%{transform:scaleY(.06);}}
+  .cava .hl{animation:twinkle 2.6s ease-in-out infinite;}
+  @keyframes twinkle{0%,100%{opacity:1;}50%{opacity:.4;}}
+  .cava .bangs{animation:hairsway 5s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 0%;}
+  @keyframes hairsway{0%,100%{transform:rotate(0deg);}50%{transform:rotate(1.8deg);}}
+  .cava .mouth .m-smile,.cava .mouth .m-big,.cava .mouth .m-o,.cava .mouth .m-smirk,.cava .mouth .m-flat{display:none;}
+  .cava.mood-neutre .mouth .m-smile{display:block;}
+  .cava.mood-content .mouth .m-big{display:block;}
+  .cava.mood-excite .mouth .m-o{display:block;}
+  .cava.mood-taquine .mouth .m-smirk{display:block;}
+  .cava.mood-decu .mouth .m-flat{display:block;}
+  .cava.talking .mouth{animation:talk .2s infinite;transform-box:fill-box;transform-origin:center;}
+  @keyframes talk{0%,100%{transform:scaleY(1);}50%{transform:scaleY(.4);}}
+  .cava.mood-excite .eyes{transform:scale(1.12);transform-box:fill-box;transform-origin:center;}
+  .cava .brows{transform-box:fill-box;transform-origin:center;transition:transform .3s ease;}
+  .cava.mood-excite .brows{transform:translateY(-3px);}
+  .cava.mood-decu .brows{transform:translateY(2px) rotate(4deg);}
+  .cava .blush{opacity:.5;transition:opacity .3s ease;}
+  .cava.mood-content .blush,.cava.mood-excite .blush{opacity:.95;}
+  .cava .sparkles{opacity:0;transition:opacity .25s ease;}
+  .cava.mood-excite .sparkles{opacity:1;}
+  .cava .sparkles .sp{transform-box:fill-box;transform-origin:center;animation:sparkle 1.6s ease-in-out infinite;}
+  .cava .sparkles g:nth-child(2) .sp{animation-delay:.4s;}
+  .cava .sparkles g:nth-child(3) .sp{animation-delay:.8s;}
+  .cava .sparkles g:nth-child(4) .sp{animation-delay:1.2s;}
+  @keyframes sparkle{0%,100%{transform:scale(.6) rotate(0deg);opacity:.35;}50%{transform:scale(1.15) rotate(20deg);opacity:1;}}
+  #cchat{position:fixed;right:14px;bottom:80px;z-index:46;width:320px;max-width:calc(100vw - 28px);
+    background:var(--card);border:1px solid var(--accent);border-radius:var(--radius-lg);padding:12px;display:none;
+    flex-direction:column;gap:8px;box-shadow:var(--shadow);max-height:72vh;}
+  #cchat.open{display:flex;}
+  .msgs{display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
+  #cchat .msgs{max-height:320px;min-height:60px;}
+  .m{font-size:12px;line-height:1.5;padding:7px 10px;border-radius:10px;max-width:92%;}
+  .m.you{align-self:flex-end;background:var(--card2);border:1px solid var(--line);}
+  .m.comp{align-self:flex-start;background:var(--card2);border:1px solid var(--line);}
+  .inputrow{display:flex;gap:6px;}
+  .inputrow input{flex:1;background:var(--card2);border:1px solid var(--line);border-radius:999px;color:var(--txt);
+    padding:9px 12px;font-size:13px;font-family:inherit;outline:none;}
+  .inputrow input:focus{border-color:var(--accent);}
+  .affbar{height:10px;background:var(--track);border-radius:999px;overflow:hidden;}
+  .affbar i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--pink2));}
+
+  /* ---------- Kawaii flourishes ---------- */
+  [data-theme="kawaii"] button{border-radius:999px;box-shadow:0 3px 0 rgba(255,160,130,.25);}
+  [data-theme="kawaii"] button:hover{transform:translateY(-2px);}
+  [data-theme="kawaii"] .gtile:hover{transform:translateY(-4px) scale(1.03);}
+  [data-theme="kawaii"] .gtile .emoji{transition:transform .15s;}
+  [data-theme="kawaii"] .gtile:hover .emoji{transform:scale(1.2) rotate(-6deg);}
+  [data-theme="kawaii"] .mascot .em{animation:bob 3s ease-in-out infinite;}
+  [data-theme="kawaii"] .mascot.locked .em{animation:none;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+  /* ---------- Icônes & cosmétiques ---------- */
+  .ic{vertical-align:-0.22em;flex:0 0 auto;}
+  .glyph{display:flex;align-items:center;justify-content:center;color:var(--accent);}
+  .glyph svg{display:block;}
+  .event{width:100%;display:flex;align-items:center;gap:8px;background:var(--rSSRbg);
+    border:1px solid var(--rSSRbd);border-radius:12px;padding:7px 12px;font-size:12px;margin-bottom:10px;}
+  .event b{color:var(--gold);}
+  .event .countdown{margin-left:auto;}
+  .seg.col{flex-direction:column;}
+  .seg.col button{justify-content:space-between;}
+  .pack{flex:1;min-width:140px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:14px 10px;border-radius:var(--radius);}
+  .pack .big{font-size:22px;font-weight:900;}
+  .pack .price{font-size:12px;color:var(--dim);}
+  .pack.best{border-color:var(--gold);background:var(--rSSRbg);}
+  .frame-box{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;
+    background:var(--card2);border:2px solid var(--line);}
+  .frame-silver{box-shadow:0 0 0 2px #c9d1e0 inset;}
+  .frame-gold{box-shadow:0 0 0 2px var(--gold) inset;}
+  .frame-ssr{box-shadow:0 0 0 2px #ffd98a inset, 0 0 12px rgba(255,200,90,.6);}
+  .frame-neon{box-shadow:0 0 0 2px var(--cyan) inset, 0 0 12px rgba(60,200,220,.6);}
+  .frame-sakura{box-shadow:0 0 0 2px var(--pink) inset, 0 0 12px rgba(255,140,180,.5);}
+  .frame-diamond{box-shadow:0 0 0 2px var(--blue) inset, 0 0 12px rgba(90,150,255,.5);}
+  .player-card{display:flex;align-items:center;gap:12px;padding:10px;border-radius:var(--radius-lg);background:var(--card2);}
+
+  /* ============================================================
+     AAA GACHA UI — override premium (thème par défaut)
+     ============================================================ */
+  :root, [data-theme="minimal"]{
+    --bg0:#0a0e1c; --bg1:#151c38;
+    --card:rgba(23,30,52,.62); --card2:rgba(32,40,68,.74);
+    --txt:#eef2fb; --dim:#94a1bf; --line:rgba(255,255,255,.10);
+    --track:rgba(255,255,255,.08); --fill:linear-gradient(90deg,#f7ce75,#e9a83f);
+    --accent:#f7ce75; --accent2:#e9a83f; --accent-ink:#231400;
+    --gem:#b591ff; --gem-ink:#1a0a38;
+    --gold:#f7ce75; --purple:#b591ff; --blue:#6ab0ff; --gray:#98a3ba;
+    --green:#43d6a0; --red:#ff6b81; --cyan:#4fd3e8;
+    --pink:#ff7ba3; --pink2:#ff5c8a;
+    --btn:rgba(33,42,70,.85); --btn-ink:#eef2fb; --btn-border:rgba(255,255,255,.14);
+    --shadow:0 10px 34px rgba(0,0,0,.5);
+    --overlay:rgba(4,6,15,.76);
+    --radius:14px; --radius-lg:20px;
+    --rN:#98a3ba; --rR:#6ab0ff; --rSR:#b591ff; --rSSR:#ffd27c; --rEX:#ff5c9e;
+    --rNbg:linear-gradient(160deg,rgba(38,46,70,.72),rgba(20,26,44,.72)); --rNbd:rgba(152,163,186,.32);
+    --rRbg:linear-gradient(160deg,rgba(20,50,94,.8),rgba(12,28,56,.8)); --rRbd:rgba(106,176,255,.5);
+    --rSRbg:linear-gradient(160deg,rgba(54,32,94,.8),rgba(28,16,54,.8)); --rSRbd:rgba(181,145,255,.55);
+    --rSSRbg:linear-gradient(160deg,rgba(92,60,12,.82),rgba(50,30,6,.82)); --rSSRbd:rgba(255,210,124,.66);
+    --rEXbg:linear-gradient(160deg,rgba(94,18,54,.82),rgba(50,8,28,.82)); --rEXbd:rgba(255,92,158,.66);
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:radial-gradient(120% 85% at 50% -12%, #1d2854 0%, #0a0e1c 56%) fixed;}
+
+  /* fond ambiant : halos + étoiles */
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+    background:
+      radial-gradient(52% 42% at 84% -6%, rgba(244,173,66,.20), transparent 60%),
+      radial-gradient(44% 38% at 6% 108%, rgba(150,96,255,.18), transparent 60%),
+      radial-gradient(34% 28% at 50% 45%, rgba(80,130,255,.08), transparent 70%);}
+  .bg::before{content:"";position:absolute;inset:0;opacity:.65;
+    background-image:
+      radial-gradient(1.5px 1.5px at 12% 22%, rgba(255,255,255,.55), transparent),
+      radial-gradient(1px 1px at 34% 8%, rgba(255,255,255,.4), transparent),
+      radial-gradient(1.2px 1.2px at 58% 30%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1px 1px at 78% 16%, rgba(255,255,255,.45), transparent),
+      radial-gradient(1.5px 1.5px at 88% 46%, rgba(255,255,255,.3), transparent),
+      radial-gradient(1px 1px at 22% 62%, rgba(255,255,255,.32), transparent),
+      radial-gradient(1.2px 1.2px at 48% 78%, rgba(255,255,255,.28), transparent),
+      radial-gradient(1px 1px at 68% 88%, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.4px 1.4px at 8% 88%, rgba(255,255,255,.3), transparent),
+      radial-gradient(1px 1px at 92% 76%, rgba(255,255,255,.4), transparent);
+    animation:starfield 70s linear infinite;}
+  @keyframes starfield{from{transform:translateY(0)}to{transform:translateY(-44px)}}
+
+  .brand{font-size:21px;font-weight:900;letter-spacing:.14em;
+    background:linear-gradient(180deg,#fff,#f7ce75 55%,#e9a83f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+
+  .panel{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid var(--line);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.06);}
+  .panel h2{color:var(--txt);font-weight:800;letter-spacing:.12em;text-transform:uppercase;font-size:12.5px;
+    padding-bottom:9px;margin-bottom:12px;border-bottom:1px solid var(--line);position:relative;}
+  .panel h2::after{content:"";position:absolute;left:0;bottom:-1px;width:46px;height:2px;
+    background:linear-gradient(90deg,var(--accent),transparent);}
+  .panel h2 .ic{color:var(--accent);}
+
+  .chip{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--line);font-weight:700;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
+  .chip b{color:var(--txt);}
+  .chip.gold{border-color:rgba(247,206,117,.4);box-shadow:0 0 14px rgba(247,206,117,.15);}
+  .chip.gem{border-color:rgba(181,145,255,.4);box-shadow:0 0 14px rgba(181,145,255,.15);}
+
+  .tab{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--line);color:var(--dim);font-weight:700;}
+  .tab .ic{color:var(--dim);}
+  .tab.active{background:rgba(58,45,20,.72);color:#f7ce75;border-color:rgba(247,206,117,.5);
+    box-shadow:0 0 16px rgba(247,206,117,.22), inset 0 1px 0 rgba(255,255,255,.08);}
+  .tab.active .ic{filter:drop-shadow(0 0 5px rgba(247,206,117,.5));}
+
+  button{background:var(--btn);border:1px solid var(--btn-border);color:var(--btn-ink);
+    font-weight:800;border-radius:11px;box-shadow:0 4px 14px rgba(0,0,0,.3);}
+  button:hover{filter:brightness(1.1);transform:translateY(-1px);}
+  button.primary{background:linear-gradient(135deg,#f9d489,#e9a83f);color:#231400;border:1px solid rgba(255,220,150,.55);}
+  button.gem{background:linear-gradient(135deg,#c9a9ff,#9a6ff0);color:#1c0a38;border:1px solid rgba(201,169,255,.55);}
+  button.gold{background:linear-gradient(135deg,#f9d489,#e9a83f);color:#231400;border:1px solid rgba(255,220,150,.55);}
+  button.danger{background:linear-gradient(135deg,#ff8ba0,#ff5c8a);color:#2a0010;border-color:transparent;}
+  button.ghost{background:rgba(255,255,255,.04);}
+
+  .gtile{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;position:relative;transition:transform .16s,border-color .16s,box-shadow .16s;}
+  .gtile:hover{transform:translateY(-4px);border-color:rgba(247,206,117,.5);box-shadow:0 14px 32px rgba(0,0,0,.55),0 0 0 1px rgba(247,206,117,.22);}
+  .gtile .glyph.N{color:var(--rN);} .gtile .glyph.R{color:var(--rR);} .gtile .glyph.SR{color:var(--rSR);} .gtile .glyph.SSR{color:var(--rSSR);}
+  .gtile .nm{color:var(--txt);}
+
+  .SSR{text-shadow:0 0 10px rgba(255,210,124,.55);}
+  .EX{color:var(--rEX);text-shadow:0 0 10px rgba(255,92,158,.55);}
+
+  .mascot{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);}
+  .mascot .glyph.N{color:var(--rN);} .mascot .glyph.R{color:var(--rR);} .mascot .glyph.SR{color:var(--rSR);} .mascot .glyph.SSR{color:var(--rSSR);}
+  .mascot.rSSR{border-color:var(--rSSRbd);box-shadow:0 0 20px rgba(255,210,124,.22), var(--shadow);}
+  .mascot.rEX{border-color:var(--rEXbd);box-shadow:0 0 20px rgba(255,92,158,.28), var(--shadow);}
+  .mascot .nm{color:var(--txt);}
+
+  .lbrow{background:var(--card);backdrop-filter:blur(8px);border:1px solid var(--line);box-shadow:var(--shadow);}
+  .lbrow.me{border-color:rgba(247,206,117,.5);box-shadow:0 0 0 1px rgba(247,206,117,.38) inset, 0 0 16px rgba(247,206,117,.12);}
+
+  .mcard{background:var(--card);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border:1px solid rgba(247,206,117,.3);box-shadow:0 24px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);}
+  .mcard h2{color:var(--txt);font-weight:900;}
+
+  .pcard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);}
+  .pcard.rSSR{border-color:var(--rSSRbd);}
+  .pcard.rEX{border-color:var(--rEXbd);}
+  .pcard.ssr{animation:pop .5s;box-shadow:0 0 22px rgba(255,210,124,.6);}
+
+  .badge{font-weight:900;letter-spacing:.08em;text-transform:uppercase;}
+  .bar i{background:var(--fill);box-shadow:0 0 10px rgba(233,168,63,.5);}
+
+  .event{background:linear-gradient(135deg,rgba(92,60,12,.85),rgba(50,30,6,.85));border:1px solid var(--rSSRbd);
+    box-shadow:0 0 20px rgba(255,210,124,.2), inset 0 1px 0 rgba(255,255,255,.08);position:relative;overflow:hidden;}
+  .event::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.12) 50%,transparent 70%);
+    animation:shimmer 3.5s ease-in-out infinite;}
+  @keyframes shimmer{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+
+  .toast{background:var(--card);backdrop-filter:blur(12px);border:1px solid rgba(247,206,117,.4);box-shadow:0 12px 30px rgba(0,0,0,.5);}
+  .seg button.on{background:linear-gradient(135deg,#f7ce75,#e9a83f);color:#231400;}
+  .glyph{color:var(--dim);}
+  #cchat,#companion .avatar,#companion .bubble{background:var(--card);backdrop-filter:blur(14px);border:1px solid var(--line);}
+  table.rates{background:var(--card);}
+  table.rates td,table.rates th{border-color:var(--line);}
+  .frame-silver{box-shadow:0 0 0 2px #cdd6e4 inset, 0 0 12px rgba(205,214,228,.3);}
+  .frame-gold{box-shadow:0 0 0 2px var(--gold) inset, 0 0 16px rgba(247,206,117,.45);}
+  .frame-ssr{box-shadow:0 0 0 2px #ffd98a inset, 0 0 20px rgba(255,200,90,.7);}
+  .frame-neon{box-shadow:0 0 0 2px var(--cyan) inset, 0 0 18px rgba(79,211,232,.6);}
+  .frame-sakura{box-shadow:0 0 0 2px var(--pink) inset, 0 0 18px rgba(255,123,163,.5);}
+  .frame-diamond{box-shadow:0 0 0 2px var(--blue) inset, 0 0 18px rgba(106,176,255,.55);}
+  .player-card{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);}
+
+  /* ---------- Navigation basse (style Clash Royale) ---------- */
+  #app{padding-bottom:104px;}
+  .nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:center;
+    background:rgba(10,14,28,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-top:1px solid rgba(255,255,255,.08);padding:8px 10px calc(8px + env(safe-area-inset-bottom));}
+  .navinner{display:flex;width:100%;max-width:560px;gap:4px;}
+  .navitem{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    padding:8px 2px 7px;border-radius:14px;cursor:pointer;color:var(--dim);font-size:10px;font-weight:800;
+    letter-spacing:.02em;position:relative;transition:color .15s,background .15s;}
+  .navitem .ic{width:23px;height:23px;}
+  .navitem:hover{color:var(--txt);}
+  .navitem.active{color:var(--accent);background:rgba(247,206,117,.09);}
+  .navitem.active .ic{filter:drop-shadow(0 0 6px rgba(247,206,117,.55));}
+  .navitem.active::before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);
+    width:28px;height:3px;border-radius:3px;background:linear-gradient(90deg,#f7ce75,#e9a83f);}
+  .subnav{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;}
+  .subnav button{justify-content:flex-start;}
+  #companion{bottom:86px;}
+  .toast{bottom:100px;}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffe9b0"/><stop offset="1" stop-color="#e9a83f"/>
+    </linearGradient>
+    <linearGradient id="gp" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9c4ff"/><stop offset="1" stop-color="#9a6ff0"/>
+    </linearGradient>
+    <linearGradient id="gb" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#bfd9ff"/><stop offset="1" stop-color="#5c9dff"/>
+    </linearGradient>
+    <linearGradient id="gc" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a7f0d4"/><stop offset="1" stop-color="#2fb27a"/>
+    </linearGradient>
+  </defs>
+</svg>
+<div class="deco" aria-hidden="true">
+  <span style="left:5%">🌸</span>
+  <span style="left:20%;animation-delay:1.4s;font-size:20px">✨</span>
+  <span style="left:40%;animation-delay:2.8s">💗</span>
+  <span style="left:60%;animation-delay:.7s;font-size:22px">🌸</span>
+  <span style="left:78%;animation-delay:3.5s">✨</span>
+  <span style="left:92%;animation-delay:2s;font-size:20px">🍓</span>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">◆</div>
+    <div class="chip" title="Niveau"><span class="ico" id="lvico"></span> <b id="lv">1</b></div>
+    <div class="chip" title="Points"><span class="ico" id="ptsico"></span> <b id="pts">0</b> PTS</div>
+    <div class="chip gold" title="Pièces"><span class="ico" id="coinsico"></span> <b id="coins">0</b></div>
+    <div class="chip gem" title="Gemmes"><span class="ico" id="gemsico"></span> <b id="gems">0</b></div>
+    <div class="chip" title="Énergie"><span class="ico" id="energyico"></span> <b id="energy">100</b>
+      <span class="energybar"><i id="energyfill" style="width:100%"></i></span>
+      <span class="countdown" id="energytime"></span></div>
+    <div class="chip gear" title="Réglages" onclick="openSettings()"><span class="ico" id="gearico"></span></div>
+  </div>
+
+  <div class="event" id="event">
+    <span id="eventico"></span><span id="eventtxt"></span><span class="countdown" id="eventcd"></span>
+  </div>
+
+  <div id="view"></div>
+</div>
+
+<nav class="nav" id="nav"></nav>
+
+<div id="modal"><div class="mcard" id="modalcard"></div></div>
+<div class="toast" id="toast"></div>
+
+<div id="companion">
+  <div class="bubble" id="cbubble"></div>
+  <div class="typing" id="ctyping">…</div>
+  <div class="avatar" id="cavatar" title="Compagnon"><span class="cava-host"></span><span class="status" id="cstatus"></span></div>
+</div>
+<div id="cchat">
+  <div class="row" style="margin:0">
+    <div style="width:44px;height:44px;flex:0 0 auto" id="cchat_avatar"></div>
+    <div><b id="cchat_name">NOVA</b><div class="muted" id="cchat_mood"></div></div>
+    <button class="ghost" id="cchat_close" style="margin-left:auto">✕</button>
+  </div>
+  <div class="msgs" id="cmsgs"></div>
+  <div class="inputrow">
+    <input id="cinput" placeholder="" maxlength="200" onkeydown="if(event.key==='Enter')sendCompanionChat()" />
+    <button class="primary" id="csend">➤</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================================================
+   ARCADE GACHA — hub des 20 mini-jeux (thèmes + i18n + points)
+   Lecture seule des clés <jeu>.best / arcade.muted des jeux.
+   État du hub stocké sous le préfixe gacha.*
+   ============================================================ */
+
+/* ---------- i18n ---------- */
+const LOCALES = {fr:'fr-FR', en:'en-US', de:'de-DE'};
+const LANG_NAME = {fr:'FRANÇAIS', en:'ENGLISH', de:'DEUTSCH'};
+const I18N = {
+  fr:{
+    'dur.full':'plein',
+    'tab.home':'ACCUEIL','tab.games':'JEUX','tab.gacha':'TIRAGE','tab.collect':'COLLECTION',
+    'tab.missions':'MISSIONS','tab.pass':'PASS','tab.shop':'BOUTIQUE','tab.rank':'CLASSEMENT','tab.companion':'COMPAGNON',
+    'rarity.N':'COMMUN','rarity.R':'RARE','rarity.SR':'SUPER RARE','rarity.SSR':'SUPER-SUPER RARE',
+    'rarity.EX':'EXCLUSIF',
+    'tier.M':'MAÎTRE','tier.D':'DIAMANT','tier.P':'PLATINE','tier.O':'OR','tier.A':'ARGENT','tier.B':'BRONZE',
+    'mission.play1':'Lance 1 partie','mission.play3':'Lance 3 parties','mission.record1':'Bats 1 record',
+    'mission.pull1':'Fais 1 tirage','mission.spend1':'Dépense 300 pièces','mission.level5':'Atteins le niveau 5',
+    'mission.pull10':'Fais 10 tirages','mission.collect10':'Possède 10 mascottes','mission.record5':'Bats 5 records',
+    'home.level':'Niveau','home.mascots':'mascottes','home.points':'Points','home.score':'Score',
+    'home.streak':'Série','home.rank':'Rang','home.rival':'#{rank} ({name}) n\'est qu\'à {pts} pts devant toi. Une partie de plus et tu le dépasses !',
+    'home.top':'Tu es au sommet — les rivaux te talonnent !','home.energy':'Énergie','home.refill':'Recharger (20)',
+    'home.ad':'Pub (+30)','home.missionsToday':'Missions du jour','home.quick':'Démarrage rapide','home.play':'Jouer','home.pull':'Tirage','home.rankTab':'Classement',
+    'home.scorePts':'pts de score','home.activityPts':'pts d\'activité','home.next':'pour le niveau {l}',
+    'games.best':'best','games.points':'pts','games.hint':'Chaque partie coûte {cost} ⚡. Le jeu s\'ouvre dans un onglet — reviens ici pour valider tes records.',
+    'gacha.banner':'BANNIÈRE EN VEDETTE','gacha.rateup':'Taux doublé sur ce tirage !','gacha.pullTitle':'Tirer des mascottes',
+    'gacha.pity':'Pitié : SR+ garanti tous les 10 tirages · SSR garanti au 90ᵉ.','gacha.ssrIn':'SSR dans {n} tirages','gacha.srSince':'SR depuis {n}',
+    'gacha.rates':'Taux','gacha.dupe':'Doublon','gacha.dupeHint':'Les doublons donnent des shards pour monter tes mascottes en étoiles.',
+    'gacha.compTitle':'Compagnons','gacha.compRateup':'Taux ×5 en vedette cette semaine','gacha.compPity':'SR+ compagnon garanti tous les 10 · SSR au 80ᵉ',
+    'gacha.eventTitle':'Événement','gacha.eventRateup':'Compagnon exclusif en vedette','gacha.eventPity':'Pitié EX : garanti dans {n} tirages',
+    'collect.title':'Collection','collect.discover':'À découvrir','collect.ascend':'ascension {s}★','collect.max':'MAX',
+    'collect.up':'Monter','collect.shards':'shards','collect.x':'x{c}',
+    'missions.daily':'Quotidiennes','missions.weekly':'Hebdomadaires','missions.claim':'Récupérer','missions.ok':'OK','missions.done':'Mission accomplie !',
+    'pass.title':'Battle Pass','pass.seasonPts':'Points de saison','pass.premiumActive':'PREMIUM actif','pass.free':'piste gratuite',
+    'pass.activate':'Activer PREMIUM (300)','pass.tiers':'Paliers','pass.tier':'Palier','pass.need':'Il faut {n} pts de saison','pass.claimed':'Palier {t} réclamé !',
+    'shop.freePack':'Pack journalier gratuit','shop.freeDesc':'+150 🪙 · +20 ⚡ (1 fois/jour)','shop.claim':'Récupérer',
+    'shop.energy':'Énergie','shop.full':'Pleine (20)','shop.ad':'Pub (+30)','shop.exchange':'Échange de pièces',
+    'shop.flash':'OFFRE FLASH','shop.flashExp':'Expire dans {t}','shop.buy':'Acheter','shop.vip':'VIP',
+    'shop.vipDesc':'Niveau VIP {n} — gemmes dépensées : {spent}. Prochain palier : {next} 💎 à dépenser.',
+    'rank.season':'Saison','rank.rank':'Rang','rank.resetHint':'Le classement se réinitialise chaque semaine. Les points de saison montent en jouant et en tirant.',
+    'rank.top30':'Top 30','rank.debug':'Débogage','rank.resetSeason':'Réinitialiser la saison','rank.resetAll':'Tout effacer',
+    'toast.levelup':'NIVEAU {l} ! +10 💎 + énergie pleine','toast.energyLow':'⚡ Énergie épuisée ! Recharge-la à la boutique.',
+    'toast.popup':'Popup bloquée — autorise les popups.','toast.noGems':'Pas assez de 💎','toast.noCoins':'Pas assez de 🪙',
+    'toast.refilled':'⚡ Énergie rechargée !','toast.refillNeed':'Pas assez de 💎 (20)','toast.adReading':'📺 Lecture…','toast.adWatch':'📺 Regarder une pub (+30 ⚡)','toast.adGot':'+30 ⚡',
+    'toast.coins':'+{n} 🪙','toast.freePack':'Pack gratuit : +150 🪙 +20 ⚡','toast.freeDone':'Déjà récupéré aujourd\'hui',
+    'toast.premiumOn':'PASS PREMIUM activé !','toast.premiumNeed':'Pass premium : 300 💎',
+    'toast.new':'NOUVEAU ! {name}','toast.maxed':'Déjà maxé ★★★★★','toast.shards':'Il te manque des shards ({a}/{b})','toast.ascended':'{name} passe à {s}★ !',
+    'toast.login':'Jour {n} : +{c} 🪙','toast.goalDone':'Objectif du jour accompli !','toast.goalProgress':'Objectif en cours ({a}/{b})','toast.aff':'❤️ Affection {t} !',
+    'modal.pull':'TIRAGE','modal.ok':'OK','modal.record':'NOUVEAU RECORD !','modal.record.lower':'meilleur (plus bas)','modal.record.higher':'meilleur score',
+    'modal.reward':'Récompense','modal.great':'GÉNIAL','modal.login':'CONNEXION QUOTIDIENNE',
+    'modal.login.hello':'Bonjour {name} ! Jour de connexion #{day}.','modal.login.reward':'Récompense','modal.login.warn':'⚠️ Si tu manques un jour, ta série repart à zéro.','modal.login.claim':'RÉCUPÉRER',
+    'settings.title':'Réglages','settings.lang':'Langue','settings.theme':'Thème','settings.theme.minimal':'Premium','settings.theme.dark':'Sombre','settings.theme.kawaii':'Kawaii',
+    'comp.mood':'ton compagnon','comp.placeholder':'Parle à ton compagnon…','comp.offline':'hors-ligne','comp.online':'en ligne',
+    'comp.model':'Ton compagnon IA','comp.affection':'Affection','comp.affHint':'joue, tire et discute pour la faire monter. Des cadeaux t\'attendent aux paliers.',
+    'comp.goal':'Objectif du jour','comp.discuss':'Discuter','comp.noChat':'Pas encore de discussion…','comp.reward':'Récompense : {t}',
+    'comp.roster':'Compagnons','comp.active':'Actif','comp.select':'Sélectionner','comp.locked':'À débloquer',
+    'comp.new':'NOUVEAU COMPAGNON ! {name} ({r})','comp.selected':'{name} est maintenant ton compagnon !',
+    'comp.ex':'ÉVÈNEMENT ! {name} (EXCLUSIF)','comp.exclusive':'Événement exclusif','comp.engine':'Moteur IA',
+    'goal.plays':'joue 3 parties','goal.pulls':'fais 2 tirages','goal.records':'bats 1 record','goal.missions':'accomplis 3 missions du jour',
+    'comp.react.ssr':'INCROYABLE !! {name} en SSR !!! Continue, t\'es sur un nuage !',
+    'comp.react.sr':'{name} en SR, pas mal ! Encore un petit effort pour le SSR.',
+    'comp.react.low':'Mouais… {name}. Allez, un de plus, le prochain est le bon !',
+    'comp.react.record':'Record battu sur {game} ! Tu deviens dangereux.','comp.react.levelup':'Niveau {level} ! On ne t\'arrête plus.',
+    'comp.react.welcome':'Salut ! Jour #{day}, ta série est en feu.','comp.react.goal':'Objectif du jour : {goal}. Vas-y !',
+    'comp.react.affection':'Tiens, un petit cadeau : {reward}. Merci d\'être là !','comp.react.offline':'(hors-ligne) Je reviens vite, promis !',
+    'nudge.pity':'Rappelle au joueur que son SSR garanti arrive dans {n} tirages et pousse-le à tirer.',
+    'nudge.rival':'Signale que {name} n\'est qu\'à {pts} pts devant lui et provoque-le.',
+    'nudge.energy':'Le joueur a peu d\'énergie. Rappelle-lui la pub (+30 ⚡) ou la recharge.',
+  },
+  en:{
+    'dur.full':'full',
+    'tab.home':'HOME','tab.games':'GAMES','tab.gacha':'PULL','tab.collect':'COLLECTION',
+    'tab.missions':'MISSIONS','tab.pass':'PASS','tab.shop':'SHOP','tab.rank':'RANKING','tab.companion':'COMPANION',
+    'rarity.N':'COMMON','rarity.R':'RARE','rarity.SR':'SUPER RARE','rarity.SSR':'SUPER-SUPER RARE',
+    'rarity.EX':'EXCLUSIVE',
+    'tier.M':'MASTER','tier.D':'DIAMOND','tier.P':'PLATINUM','tier.O':'GOLD','tier.A':'SILVER','tier.B':'BRONZE',
+    'mission.play1':'Play 1 game','mission.play3':'Play 3 games','mission.record1':'Beat 1 record',
+    'mission.pull1':'Do 1 pull','mission.spend1':'Spend 300 coins','mission.level5':'Reach level 5',
+    'mission.pull10':'Do 10 pulls','mission.collect10':'Own 10 mascots','mission.record5':'Beat 5 records',
+    'home.level':'Level','home.mascots':'mascots','home.points':'Points','home.score':'Score',
+    'home.streak':'Streak','home.rank':'Rank','home.rival':'#{rank} ({name}) is only {pts} pts ahead. One more game and you pass them!',
+    'home.top':'You\'re on top — the rivals are right behind you!','home.energy':'Energy','home.refill':'Refill (20)',
+    'home.ad':'Ad (+30)','home.missionsToday':'Today\'s missions','home.quick':'Quick start','home.play':'Play','home.pull':'Pull','home.rankTab':'Ranking',
+    'home.scorePts':'score pts','home.activityPts':'activity pts','home.next':'to level {l}',
+    'games.best':'best','games.points':'pts','games.hint':'Each game costs {cost} ⚡. It opens in a tab — come back here to validate your records.',
+    'gacha.banner':'FEATURED BANNER','gacha.rateup':'Doubled rate on this pull!','gacha.pullTitle':'Pull mascots',
+    'gacha.pity':'Pity: SR+ guaranteed every 10 pulls · SSR guaranteed at 90.','gacha.ssrIn':'SSR in {n} pulls','gacha.srSince':'SR since {n}',
+    'gacha.rates':'Rates','gacha.dupe':'Duplicate','gacha.dupeHint':'Duplicates give shards to raise your mascots in stars.',
+    'gacha.compTitle':'Companions','gacha.compRateup':'×5 rate-up this week','gacha.compPity':'SR+ companion guaranteed every 10 · SSR at 80',
+    'gacha.eventTitle':'Event','gacha.eventRateup':'Exclusive featured companion','gacha.eventPity':'EX pity: guaranteed in {n} pulls',
+    'collect.title':'Collection','collect.discover':'To discover','collect.ascend':'ascension {s}★','collect.max':'MAX',
+    'collect.up':'Raise','collect.shards':'shards','collect.x':'x{c}',
+    'missions.daily':'Daily','missions.weekly':'Weekly','missions.claim':'Claim','missions.ok':'OK','missions.done':'Mission complete!',
+    'pass.title':'Battle Pass','pass.seasonPts':'Season points','pass.premiumActive':'PREMIUM active','pass.free':'free track',
+    'pass.activate':'Activate PREMIUM (300)','pass.tiers':'Tiers','pass.tier':'Tier','pass.need':'You need {n} season pts','pass.claimed':'Tier {t} claimed!',
+    'shop.freePack':'Daily free pack','shop.freeDesc':'+150 🪙 · +20 ⚡ (once/day)','shop.claim':'Claim',
+    'shop.energy':'Energy','shop.full':'Full (20)','shop.ad':'Ad (+30)','shop.exchange':'Coin exchange',
+    'shop.flash':'FLASH OFFER','shop.flashExp':'Expires in {t}','shop.buy':'Buy','shop.vip':'VIP',
+    'shop.vipDesc':'VIP level {n} — gems spent: {spent}. Next tier: {next} 💎 to spend.',
+    'rank.season':'Season','rank.rank':'Rank','rank.resetHint':'The ranking resets every week. Season points grow by playing and pulling.',
+    'rank.top30':'Top 30','rank.debug':'Debug','rank.resetSeason':'Reset season','rank.resetAll':'Erase all',
+    'toast.levelup':'LEVEL {l}! +10 💎 + full energy','toast.energyLow':'⚡ Out of energy! Refill it in the shop.',
+    'toast.popup':'Popup blocked — allow popups.','toast.noGems':'Not enough 💎','toast.noCoins':'Not enough 🪙',
+    'toast.refilled':'⚡ Energy refilled!','toast.refillNeed':'Not enough 💎 (20)','toast.adReading':'📺 Playing…','toast.adWatch':'📺 Watch an ad (+30 ⚡)','toast.adGot':'+30 ⚡',
+    'toast.coins':'+{n} 🪙','toast.freePack':'Free pack: +150 🪙 +20 ⚡','toast.freeDone':'Already claimed today',
+    'toast.premiumOn':'PREMIUM pass activated!','toast.premiumNeed':'Premium pass: 300 💎',
+    'toast.new':'NEW! {name}','toast.maxed':'Already maxed ★★★★★','toast.shards':'You need shards ({a}/{b})','toast.ascended':'{name} goes to {s}★!',
+    'toast.login':'Day {n}: +{c} 🪙','toast.goalDone':'Daily goal complete!','toast.goalProgress':'Goal in progress ({a}/{b})','toast.aff':'❤️ Affection {t}!',
+    'modal.pull':'PULL','modal.ok':'OK','modal.record':'NEW RECORD!','modal.record.lower':'best (lower)','modal.record.higher':'best score',
+    'modal.reward':'Reward','modal.great':'GREAT','modal.login':'DAILY LOGIN',
+    'modal.login.hello':'Hi {name}! Login day #{day}.','modal.login.reward':'Reward','modal.login.warn':'⚠️ Miss a day and your streak resets.','modal.login.claim':'CLAIM',
+    'settings.title':'Settings','settings.lang':'Language','settings.theme':'Theme','settings.theme.minimal':'Premium','settings.theme.dark':'Dark','settings.theme.kawaii':'Kawaii',
+    'comp.mood':'your companion','comp.placeholder':'Talk to your companion…','comp.offline':'offline','comp.online':'online',
+    'comp.model':'Your AI companion','comp.affection':'Affection','comp.affHint':'play, pull and chat to raise it. Gifts await at milestones.',
+    'comp.goal':'Daily goal','comp.discuss':'Chat','comp.noChat':'No conversation yet…','comp.reward':'Reward: {t}',
+    'comp.roster':'Companions','comp.active':'Active','comp.select':'Select','comp.locked':'Locked',
+    'comp.new':'NEW COMPANION! {name} ({r})','comp.selected':'{name} is now your companion!',
+    'comp.ex':'EVENT! {name} (EXCLUSIVE)','comp.exclusive':'Event exclusive','comp.engine':'AI engine',
+    'goal.plays':'play 3 games','goal.pulls':'do 2 pulls','goal.records':'beat 1 record','goal.missions':'complete 3 daily missions',
+    'comp.react.ssr':'INCREDIBLE!! {name} in SSR!!! Keep going, you\'re on a roll!',
+    'comp.react.sr':'{name} in SR, nice! One more effort for the SSR.',
+    'comp.react.low':'Meh… {name}. Come on, one more, the next one is it!',
+    'comp.react.record':'Record beaten on {game}! You\'re getting dangerous.','comp.react.levelup':'Level {level}! Nothing stops you.',
+    'comp.react.welcome':'Hey! Day #{day}, your streak is on fire.','comp.react.goal':'Daily goal: {goal}. Go!',
+    'comp.react.affection':'Here, a little gift: {reward}. Thanks for being here!','comp.react.offline':'(offline) I\'ll be right back, promise!',
+    'nudge.pity':'Remind the player their guaranteed SSR comes in {n} pulls and push them to pull.',
+    'nudge.rival':'Point out that {name} is only {pts} pts ahead and taunt them.',
+    'nudge.energy':'The player is low on energy. Remind them of the ad (+30 ⚡) or the refill.',
+  },
+  de:{
+    'dur.full':'voll',
+    'tab.home':'START','tab.games':'SPIELE','tab.gacha':'ZIEHUNG','tab.collect':'SAMMLUNG',
+    'tab.missions':'AUFGABEN','tab.pass':'PASS','tab.shop':'SHOP','tab.rank':'RANGLISTE','tab.companion':'BEGLEITER',
+    'rarity.N':'GEWÖHNLICH','rarity.R':'SELTEN','rarity.SR':'SUPER SELTEN','rarity.SSR':'SUPER-SUPER SELTEN',
+    'rarity.EX':'EXKLUSIV',
+    'tier.M':'MEISTER','tier.D':'DIAMANT','tier.P':'PLATIN','tier.O':'GOLD','tier.A':'SILBER','tier.B':'BRONZE',
+    'mission.play1':'Spiele 1 Partie','mission.play3':'Spiele 3 Partien','mission.record1':'Brich 1 Rekord',
+    'mission.pull1':'Ziehe 1 Mal','mission.spend1':'Gib 300 Münzen aus','mission.level5':'Erreiche Level 5',
+    'mission.pull10':'Ziehe 10 Mal','mission.collect10':'Besitze 10 Maskottchen','mission.record5':'Brich 5 Rekorde',
+    'home.level':'Level','home.mascots':'Maskottchen','home.points':'Punkte','home.score':'Punktzahl',
+    'home.streak':'Serie','home.rank':'Rang','home.rival':'#{rank} ({name}) ist nur {pts} Pkt. vor dir. Noch ein Spiel und du überholst ihn!',
+    'home.top':'Du bist an der Spitze — die Rivalen sind dicht hinter dir!','home.energy':'Energie','home.refill':'Aufladen (20)',
+    'home.ad':'Werbung (+30)','home.missionsToday':'Tagesaufgaben','home.quick':'Schnellstart','home.play':'Spielen','home.pull':'Ziehung','home.rankTab':'Rangliste',
+    'home.scorePts':'Punktzahl-Pkt.','home.activityPts':'Aktivitäts-Pkt.','home.next':'bis Level {l}',
+    'games.best':'Rekord','games.points':'Pkt.','games.hint':'Jedes Spiel kostet {cost} ⚡. Es öffnet sich in einem Tab — komm zurück, um deine Rekorde zu bestätigen.',
+    'gacha.banner':'AKTUELLER BANNER','gacha.rateup':'Doppelte Rate bei dieser Ziehung!','gacha.pullTitle':'Maskottchen ziehen',
+    'gacha.pity':'Pity: SR+ garantiert alle 10 Ziehungen · SSR garantiert bei 90.','gacha.ssrIn':'SSR in {n} Ziehungen','gacha.srSince':'SR seit {n}',
+    'gacha.rates':'Raten','gacha.dupe':'Duplikat','gacha.dupeHint':'Duplikate geben Splitter, um deine Maskottchen in Sternen zu erhöhen.',
+    'gacha.compTitle':'Begleiter','gacha.compRateup':'×5 Rate-Up diese Woche','gacha.compPity':'SR+ Begleiter garantiert alle 10 · SSR bei 80',
+    'gacha.eventTitle':'Event','gacha.eventRateup':'Exklusiver Begleiter im Fokus','gacha.eventPity':'EX-Pity: garantiert in {n} Ziehungen',
+    'collect.title':'Sammlung','collect.discover':'Zu entdecken','collect.ascend':'Aufstieg {s}★','collect.max':'MAX',
+    'collect.up':'Erhöhen','collect.shards':'Splitter','collect.x':'x{c}',
+    'missions.daily':'Täglich','missions.weekly':'Wöchentlich','missions.claim':'Abholen','missions.ok':'OK','missions.done':'Aufgabe erfüllt!',
+    'pass.title':'Battle Pass','pass.seasonPts':'Saisonpunkte','pass.premiumActive':'PREMIUM aktiv','pass.free':'kostenlose Spur',
+    'pass.activate':'PREMIUM aktivieren (300)','pass.tiers':'Stufen','pass.tier':'Stufe','pass.need':'Du brauchst {n} Saisonpunkte','pass.claimed':'Stufe {t} abgeholt!',
+    'shop.freePack':'Tägliches Gratispaket','shop.freeDesc':'+150 🪙 · +20 ⚡ (1×/Tag)','shop.claim':'Abholen',
+    'shop.energy':'Energie','shop.full':'Voll (20)','shop.ad':'Werbung (+30)','shop.exchange':'Münztausch',
+    'shop.flash':'BLITZANGEBOT','shop.flashExp':'Läuft ab in {t}','shop.buy':'Kaufen','shop.vip':'VIP',
+    'shop.vipDesc':'VIP-Level {n} — ausgegebene Edelsteine: {spent}. Nächste Stufe: {next} 💎 ausgeben.',
+    'rank.season':'Saison','rank.rank':'Rang','rank.resetHint':'Die Rangliste setzt sich jede Woche zurück. Saisonpunkte steigen durch Spielen und Ziehen.',
+    'rank.top30':'Top 30','rank.debug':'Debug','rank.resetSeason':'Saison zurücksetzen','rank.resetAll':'Alles löschen',
+    'toast.levelup':'LEVEL {l}! +10 💎 + volle Energie','toast.energyLow':'⚡ Keine Energie mehr! Lade sie im Shop auf.',
+    'toast.popup':'Popup blockiert — erlaube Popups.','toast.noGems':'Nicht genug 💎','toast.noCoins':'Nicht genug 🪙',
+    'toast.refilled':'⚡ Energie aufgeladen!','toast.refillNeed':'Nicht genug 💎 (20)','toast.adReading':'📺 Wiedergabe…','toast.adWatch':'📺 Werbung ansehen (+30 ⚡)','toast.adGot':'+30 ⚡',
+    'toast.coins':'+{n} 🪙','toast.freePack':'Gratispaket: +150 🪙 +20 ⚡','toast.freeDone':'Heute schon abgeholt',
+    'toast.premiumOn':'PREMIUM-Pass aktiviert!','toast.premiumNeed':'Premium-Pass: 300 💎',
+    'toast.new':'NEU! {name}','toast.maxed':'Schon maximal ★★★★★','toast.shards':'Du brauchst Splitter ({a}/{b})','toast.ascended':'{name} steigt auf {s}★!',
+    'toast.login':'Tag {n}: +{c} 🪙','toast.goalDone':'Tagesziel erfüllt!','toast.goalProgress':'Ziel in Arbeit ({a}/{b})','toast.aff':'❤️ Zuneigung {t}!',
+    'modal.pull':'ZIEHUNG','modal.ok':'OK','modal.record':'NEUER REKORD!','modal.record.lower':'bester (niedriger)','modal.record.higher':'beste Punktzahl',
+    'modal.reward':'Belohnung','modal.great':'KLASSE','modal.login':'TÄGLICHE ANMELDUNG',
+    'modal.login.hello':'Hallo {name}! Anmeldetag #{day}.','modal.login.reward':'Belohnung','modal.login.warn':'⚠️ Verpasse einen Tag und deine Serie startet neu.','modal.login.claim':'ABHOLEN',
+    'settings.title':'Einstellungen','settings.lang':'Sprache','settings.theme':'Thema','settings.theme.minimal':'Premium','settings.theme.dark':'Dunkel','settings.theme.kawaii':'Kawaii',
+    'comp.mood':'dein Begleiter','comp.placeholder':'Sprich mit deinem Begleiter…','comp.offline':'offline','comp.online':'online',
+    'comp.model':'Dein KI-Begleiter','comp.affection':'Zuneigung','comp.affHint':'spiele, ziehe und chatte, um sie zu erhöhen. Geschenke warten an Meilensteinen.',
+    'comp.goal':'Tagesziel','comp.discuss':'Chat','comp.noChat':'Noch kein Gespräch…','comp.reward':'Belohnung: {t}',
+    'comp.roster':'Begleiter','comp.active':'Aktiv','comp.select':'Wählen','comp.locked':'Gesperrt',
+    'comp.new':'NEUER BEGLEITER! {name} ({r})','comp.selected':'{name} ist jetzt dein Begleiter!',
+    'comp.ex':'EVENT! {name} (EXKLUSIV)','comp.exclusive':'Event-exklusiv','comp.engine':'KI-Engine',
+    'goal.plays':'spiele 3 Partien','goal.pulls':'ziehe 2 Mal','goal.records':'brich 1 Rekord','goal.missions':'erfülle 3 Tagesaufgaben',
+    'comp.react.ssr':'UNGLÄUBLICH!! {name} als SSR!!! Weiter so, du bist im Flow!',
+    'comp.react.sr':'{name} als SR, nicht schlecht! Noch eine Anstrengung für den SSR.',
+    'comp.react.low':'Naja… {name}. Los, noch eins, das nächste ist es!',
+    'comp.react.record':'Rekord gebrochen bei {game}! Du wirst gefährlich.','comp.react.levelup':'Level {level}! Nichts hält dich auf.',
+    'comp.react.welcome':'Hey! Tag #{day}, deine Serie brennt.','comp.react.goal':'Tagesziel: {goal}. Los!',
+    'comp.react.affection':'Hier, ein kleines Geschenk: {reward}. Danke, dass du da bist!','comp.react.offline':'(offline) Ich bin gleich zurück, versprochen!',
+    'nudge.pity':'Erinnere den Spieler, dass sein garantiertes SSR in {n} Ziehungen kommt, und dränge ihn zum Ziehen.',
+    'nudge.rival':'Weise darauf hin, dass {name} nur {pts} Pkt. voraus ist, und stichle ihn.',
+    'nudge.energy':'Der Spieler hat wenig Energie. Erinnere ihn an die Werbung (+30 ⚡) oder das Aufladen.',
+  }
+};
+let LANG = 'fr';
+try{ LANG = localStorage.getItem('gacha.lang') || 'fr'; }catch(e){}
+if(!I18N[LANG]) LANG = 'fr';
+let THEME = 'minimal';
+try{ THEME = localStorage.getItem('gacha.theme') || 'minimal'; }catch(e){}
+if(!['minimal','dark','kawaii'].includes(THEME)) THEME = 'minimal';
+function t(key, vars){
+  let s = (I18N[LANG] && I18N[LANG][key]) || I18N.fr[key] || key;
+  if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  return s;
+}
+function applyLang(){ document.documentElement.lang = LANG; }
+function applyTheme(){ document.documentElement.setAttribute('data-theme', THEME); }
+function setLang(l){ LANG=l; try{ localStorage.setItem('gacha.lang', l); }catch(e){} applyLang(); render(); }
+function setTheme(t){ THEME=t; try{ localStorage.setItem('gacha.theme', t); }catch(e){} applyTheme(); }
+
+/* ---------- Métadonnées des jeux + mascottes ---------- */
+const GAMES = [
+  {id:'2048',           folder:'2048',           file:'2048.html',           title:'2048',            dir:'high', par:12000, cap:200, rarity:'R',   emoji:'🔢', mascot:'Duo'},
+  {id:'asteroids',      folder:'Asteroids',      file:'asteroids.html',      title:'Asteroids',       dir:'high', par:5000,  cap:200, rarity:'N',   emoji:'☄️', mascot:'Rok'},
+  {id:'breakout',       folder:'Breakout',       file:'breakout.html',       title:'Breakout',        dir:'high', par:600,   cap:200, rarity:'N',   emoji:'🧱', mascot:'Brick'},
+  {id:'connectfour',    folder:'ConnectFour',    file:'connectfour.html',    title:'Connect Four',    dir:'high', par:3,     cap:200, rarity:'SR',  emoji:'🔴', mascot:'Quadro'},
+  {id:'flappybird',     folder:'FlappyBird',     file:'flappybird.html',     title:'Flappy Bird',     dir:'high', par:15,    cap:200, rarity:'R',   emoji:'🐤', mascot:'Flappy'},
+  {id:'hangman',        folder:'Hangman',        file:'hangman.html',        title:'Hangman',         dir:'high', par:3,     cap:200, rarity:'N',   emoji:'🪢', mascot:'Gallow'},
+  {id:'mastermind',     folder:'Mastermind',     file:'mastermind.html',     title:'Mastermind',      dir:'low',  par:6,     cap:150, rarity:'SR',  emoji:'🧠', mascot:'Codex'},
+  {id:'memory',         folder:'Memory',         file:'memory.html',         title:'Memory',          dir:'low',  par:20,    cap:150, rarity:'N',   emoji:'🃏', mascot:'Memo'},
+  {id:'minesweeper',    folder:'Minesweeper',    file:'minesweeper.html',    title:'Minesweeper',     dir:'low',  par:120,   cap:150, rarity:'R',   emoji:'💣', mascot:'Sweeper'},
+  {id:'pacman',         folder:'PacMan',         file:'pacman.html',         title:'Pac-Man',         dir:'high', par:5000,  cap:200, rarity:'SSR', emoji:'🟡', mascot:'Chomper'},
+  {id:'pong',           folder:'Pong',           file:'pong.html',           title:'Pong',            dir:'high', par:5,     cap:140, rarity:'R',   emoji:'🏓', mascot:'Paddle'},
+  {id:'rockpaperscissors', folder:'RockPaperScissors', file:'rockpaperscissors.html', title:'Rock Paper Scissors', dir:'high', par:4, cap:125, rarity:'N', emoji:'✊', mascot:'Fisty'},
+  {id:'simon',          folder:'Simon',          file:'simon.html',          title:'Simon',           dir:'high', par:10,    cap:200, rarity:'SR',  emoji:'🎵', mascot:'Echo'},
+  {id:'snake',          folder:'Snake',          file:'snake.html',          title:'Snake',           dir:'high', par:40,    cap:200, rarity:'SR',  emoji:'🐍', mascot:'Serpentio'},
+  {id:'spaceinvaders',  folder:'SpaceInvaders',  file:'spaceinvaders.html',  title:'Space Invaders',  dir:'high', par:5000,  cap:200, rarity:'SR',  emoji:'👾', mascot:'Zog'},
+  {id:'sudoku',         folder:'Sudoku',         file:'sudoku.html',         title:'Sudoku',          dir:'low',  par:600,   cap:150, rarity:'R',   emoji:'🧩', mascot:'Nono'},
+  {id:'tetris',         folder:'Tetris',         file:'tetris.html',         title:'Tetris',          dir:'high', par:20000, cap:200, rarity:'SSR', emoji:'🟦', mascot:'Blokky'},
+  {id:'tictactoe',      folder:'TicTacToe',      file:'tictactoe.html',      title:'Tic Tac Toe',     dir:'high', par:3,     cap:200, rarity:'R',   emoji:'❌', mascot:'Trio'},
+  {id:'whackamole',     folder:'WhackAMole',     file:'whackamole.html',     title:'Whack-A-Mole',    dir:'high', par:20,    cap:200, rarity:'SSR', emoji:'🔨', mascot:'Whacker'},
+  {id:'wordle',         folder:'Wordle',         file:'wordle.html',         title:'Wordle',          dir:'low',  par:4,     cap:150, rarity:'SR',  emoji:'📖', mascot:'Lexi'},
+  {id:'15puzzle',  folder:'15Puzzle',  file:'15puzzle.html',  title:'15 Puzzle',      dir:'low',  par:40,   cap:120, rarity:'R',   emoji:'🧩', mascot:'Puzzlo'},
+  {id:'lightsout', folder:'LightsOut', file:'lightsout.html', title:'Lights Out',     dir:'low',  par:12,   cap:100, rarity:'R',   emoji:'💡', mascot:'Lumen'},
+  {id:'hanoi',     folder:'Hanoi',     file:'hanoi.html',     title:'Tower of Hanoi', dir:'low',  par:15,   cap:100, rarity:'R',   emoji:'🗼', mascot:'Moaï'},
+  {id:'reaction',  folder:'Reaction',  file:'reaction.html',  title:'Réaction',       dir:'low',  par:280,  cap:100, rarity:'N',   emoji:'⚡', mascot:'Flash'},
+  {id:'dinorun',   folder:'DinoRun',   file:'dinorun.html',   title:'Dino Run',       dir:'high', par:1500, cap:200, rarity:'SR',  emoji:'🦖', mascot:'Rexy'},
+];
+
+const RARITY_WEIGHT = {N:60, R:28, SR:9, SSR:3};
+const RARITY_ORDER  = ['N','R','SR','SSR','EX'];
+const SHARDS = {N:1, R:3, SR:8, SSR:25};
+
+const ENERGY_MAX = 100, ENERGY_COST = 10, ENERGY_REFILL_MS = 60000;
+const PULL_COST_COINS = 150, PULL_COST_GEMS = 15, PULL10_COINS = 1350, PULL10_GEMS = 135;
+
+const MISSIONS = [
+  {id:'play1',  period:'daily',  desc:'mission.play1',  type:'play',    target:1,   reward:{coins:50,  xp:20}},
+  {id:'play3',  period:'daily',  desc:'mission.play3',  type:'play',    target:3,   reward:{coins:120, xp:50}},
+  {id:'record1',period:'daily',  desc:'mission.record1',type:'record',  target:1,   reward:{coins:150, gems:2, xp:80}},
+  {id:'pull1',  period:'daily',  desc:'mission.pull1',  type:'pull',    target:1,   reward:{coins:80,  xp:40}},
+  {id:'spend1', period:'daily',  desc:'mission.spend1', type:'spend',   target:300, reward:{coins:100, xp:40}},
+  {id:'level5', period:'weekly', desc:'mission.level5', type:'level',   target:5,   reward:{gems:10,  xp:200}},
+  {id:'pull10', period:'weekly', desc:'mission.pull10', type:'pull',    target:10,  reward:{gems:8,   xp:150}},
+  {id:'collect10',period:'weekly',desc:'mission.collect10', type:'collect', target:10, reward:{gems:15,  xp:300}},
+  {id:'record5',period:'weekly', desc:'mission.record5', type:'record',  target:5,   reward:{gems:12,  xp:250}},
+];
+
+const BOT_NAMES = ["PIXEL","BYTE","GLITCH","NOVA","VECTOR","8BIT","SPRITE","TURBO","RADAR","COMBO","LASER","BLIP","ZAPPER","MOJO","NINJA","PHANTOM","CYPHER","DRIFT","JOLT","KRAKEN","MIRAGE","ORBIT","PRISM","QUANTA","RIFT","SONIC","TITAN","ULTRA","VOLT","WIZARD","XENON","YETI","ZENITH","APEX","BLAZE","CHROMA","DELTA","FALCON","GRAVITY","HEX","ION","JADE","KOI","LUMEN","MERCURY","NEBULA","ONYX","PLASMA","QUASAR","RUNE","SHADOW","TEMPEST","URSA","VIPER","WAVE","ZERO","ARROW","BOOST","CIPHER"];
+
+/* ---------- Utilitaires ---------- */
+const $ = s => document.querySelector(s);
+const LS = {
+  get(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  getJSON(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } },
+  setJSON(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} },
+};
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const yesterday = () => { const d=new Date(Date.now()-86400000); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const weekNum = () => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+3-((d.getDay()+6)%7)); const w1=new Date(d.getFullYear(),0,4); return d.getFullYear()+'-W'+String(1+Math.round(((d-w1)/86400000-3+((w1.getDay()+6)%7))/7)).padStart(2,'0'); };
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function seededShuffle(arr, rng){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function fmt(n){ return Number(n).toLocaleString(LOCALES[LANG]||'fr-FR'); }
+function fmtDur(ms){ if(ms<=0) return t('dur.full'); const s=Math.ceil(ms/1000); const m=Math.floor(s/60), r=s%60; return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0'); }
+
+/* ---------- État ---------- */
+function defaultState(){
+  return {
+    profile:{name:'PLAYER', avatar:0},
+    coins:300, gems:60,
+    energy:{value:ENERGY_MAX, at:Date.now()},
+    xp:0, seasonXP:0, level:1,
+    pity:{sinceSR:0, sinceSSR:0, compSR:0, compSSR:0, ex:0},
+    collection:{},
+    missions:{},
+    bp:{season:'', premium:false, claimed:[]},
+    login:{last:null, streak:0},
+    stats:{plays:0, records:0, pulls:0, ascends:0, spentCoins:0, gemsSpentTotal:0, scorePts:0, activityPts:0, ssrPulled:0},
+    banner:{game:null, until:0},
+    daily:'', weekly:'',
+    companion:{affection:0, mood:'neutre', daily:null, dailyGoal:null, lastNudge:0, lastChatAff:null, owned:{nova:true}, active:'nova'},
+    cosmetics:{frame:'default', title:null, ownedFrames:['default'], ownedTitles:['rookie'], boostUntil:0},
+    bestCache:null,
+    dailyFree:null,
+  };
+}
+let S = LS.getJSON('gacha.state');
+if(!S){ S = defaultState(); }
+const _d = defaultState();
+for(const k in _d){ if(S[k]===undefined) S[k]=_d[k]; }
+if(S.stats.scorePts===undefined) S.stats.scorePts = 0;
+if(S.stats.activityPts===undefined) S.stats.activityPts = 0;
+if(!S.companion) S.companion = {};
+if(!S.companion.owned) S.companion.owned = {nova:true};
+if(!S.companion.active) S.companion.active = 'nova';
+if(!S.pity) S.pity = {sinceSR:0, sinceSSR:0, compSR:0, compSSR:0};
+if(S.pity.compSR===undefined) S.pity.compSR = 0;
+if(S.pity.compSSR===undefined) S.pity.compSSR = 0;
+if(S.pity.ex===undefined) S.pity.ex = 0;
+if(S.stats.ssrPulled===undefined) S.stats.ssrPulled = 0;
+if(!S.cosmetics) S.cosmetics = {frame:'default', title:null, ownedFrames:['default'], ownedTitles:['rookie'], boostUntil:0};
+if(!S.cosmetics.ownedFrames) S.cosmetics.ownedFrames = ['default'];
+if(!S.cosmetics.ownedTitles) S.cosmetics.ownedTitles = ['rookie'];
+
+function save(){ LS.setJSON('gacha.state', S); }
+function saveBest(){ LS.setJSON('gacha.bestCache', S.bestCache); }
+
+/* ---------- Énergie ---------- */
+function syncEnergy(){
+  const e=S.energy; const t=Date.now();
+  if(e.value < ENERGY_MAX){ const g=Math.floor((t-e.at)/ENERGY_REFILL_MS); if(g>0){ e.value=Math.min(ENERGY_MAX,e.value+g); e.at=t; } }
+  else e.at=t;
+}
+function energyCountdown(){
+  const e=S.energy;
+  if(e.value>=ENERGY_MAX) return 0;
+  return (ENERGY_MAX-e.value)*ENERGY_REFILL_MS - (Date.now()-e.at);
+}
+
+/* ---------- Lecture des records / score ---------- */
+function readBest(id){
+  const v = parseInt(LS.get(id+'.best'),10);
+  if(isNaN(v)) return null;
+  const g = GAMES.find(x=>x.id===id);
+  if(g.dir==='high') return v>0 ? v : null;
+  return (v>0 && v<900) ? v : null;
+}
+function ratingForBest(g, best){
+  if(best==null) return 0;
+  let r;
+  if(g.dir==='high') r = Math.min(best/g.par*100, g.cap);
+  else r = 100 - (best-g.par)/g.par*100;
+  return Math.max(0, Math.min(r, g.cap));
+}
+function ratingOf(g){ return ratingForBest(g, readBest(g.id)); }
+function totalRating(){ return GAMES.reduce((s,g)=>s+ratingOf(g),0); }
+
+/* ---------- Progression (points = scores + activité) ---------- */
+function xpNeed(l){ return 60 + (l-1)*20; }
+function addCoins(n){ S.coins+=n; }
+function addGems(n){ S.gems+=n; }
+function spendCoins(n){ S.coins-=n; S.stats.spentCoins+=n; track('spend', n); }
+function spendGems(n){ S.gems-=n; S.stats.gemsSpentTotal+=n; }
+function boostMult(){ return (S.cosmetics && S.cosmetics.boostUntil > Date.now()) ? 2 : 1; }
+function addPts(n, kind){
+  n = Math.round(n * boostMult());
+  S.xp+=n; S.seasonXP+=n;
+  if(kind==='score') S.stats.scorePts += n; else S.stats.activityPts += n;
+  while(S.xp >= xpNeed(S.level)){
+    S.xp -= xpNeed(S.level); S.level++;
+    S.gems += 10; S.energy.value=ENERGY_MAX; S.energy.at=Date.now();
+    toast(t('toast.levelup', {l:S.level}));
+    grantAffection(3); companionReact('levelup', {level:S.level});
+  }
+}
+function vipLevel(){ return Math.min(10, Math.floor(S.stats.gemsSpentTotal/200)); }
+
+/* ---------- Missions ---------- */
+function missionValue(m){
+  if(m.type==='level') return S.level;
+  if(m.type==='collect') return ownedCount();
+  const st=S.missions[m.id]; return st ? st.value : 0;
+}
+function track(type, amt){
+  let dirty=false;
+  for(const m of MISSIONS){
+    if(m.type!==type) continue;
+    if(!S.missions[m.id]) S.missions[m.id]={value:0, claimed:false};
+    const st=S.missions[m.id];
+    if(!st.claimed && st.value < m.target){ st.value = Math.min(m.target, st.value+amt); dirty=true; }
+  }
+  if(dirty) render();
+}
+function ownedCount(){ return Object.keys(S.collection).length; }
+
+/* ---------- Collection ---------- */
+function mascotOf(id){ return GAMES.find(g=>g.id===id); }
+function ascend(id){
+  const c=S.collection[id]; if(!c) return;
+  const m=mascotOf(id); const cost=(c.stars+1)*8;
+  if(c.stars>=5){ toast(t('toast.maxed')); return; }
+  if(c.shards < cost){ toast(t('toast.shards', {a:c.shards, b:cost})); return; }
+  c.shards-=cost; c.stars++; S.stats.ascends++; toast(t('toast.ascended', {name:m.mascot, s:c.stars}));
+  save(); render();
+}
+
+/* ---------- Gacha ---------- */
+function pickMascot(r){
+  const pool = GAMES.filter(g=>g.rarity===r);
+  const feat = S.banner.game;
+  let total=0; const w = pool.map(g=>{ const wt=(g.id===feat?2:1); total+=wt; return wt; });
+  let x=Math.random()*total;
+  for(let i=0;i<pool.length;i++){ x-=w[i]; if(x<0) return pool[i].id; }
+  return pool[pool.length-1].id;
+}
+function rollOne(forceSR){
+  let r;
+  if(S.pity.sinceSSR >= 89) r='SSR';
+  else { const x=Math.random()*100; r = x<3?'SSR' : x<12?'SR' : x<40?'R' : 'N'; }
+  if(forceSR && (r==='N'||r==='R')) r='SR';
+  const id = pickMascot(r);
+  if(r==='SR'||r==='SSR') S.pity.sinceSR=0; else S.pity.sinceSR++;
+  if(r==='SSR') S.pity.sinceSSR=0; else S.pity.sinceSSR++;
+  return {kind:'mascot', rarity:r, id};
+}
+const COMPANION_DROP_CHANCE = 0.18;
+const COMPANION_RATE = {N:60, R:30, SR:8, SSR:2};
+function featuredCompanion(){ const pool = COMPANIONS.filter(c=>c.rarity==='SR'||c.rarity==='SSR'); return pool[parseInt(weekNum().replace(/\D/g,''),10) % pool.length]; }
+const EX_DROP_CHANCE = 0.008;
+function activeEventCompanion(){ const ex = COMPANIONS.filter(c=>c.rarity==='EX'); return ex[parseInt(weekNum().replace(/\D/g,''),10) % ex.length]; }
+function eventUntil(){ const d=new Date(); const day=d.getDay(); const add=(day===0)?0:(7-day); d.setDate(d.getDate()+add); d.setHours(23,59,59,999); return d.getTime(); }
+function rollCompanion(){
+  const pool = COMPANIONS.filter(c=>!S.companion.owned[c.id] && c.rarity!=='EX');
+  if(pool.length===0) return null;
+  const feat = featuredCompanion();
+  let r;
+  if(S.pity.compSSR >= 79) r='SSR';
+  else if(S.pity.compSR >= 9){ const x=Math.random()*100; r = x<50?'SR':'SSR'; }
+  else { const x=Math.random()*100; r = x<2?'SSR' : x<10?'SR' : x<40?'R' : 'N'; }
+  let cand = pool.filter(c=>c.rarity===r);
+  if(cand.length===0) cand = pool;
+  let total=0; const w=cand.map(c=>{ const wt=(c.id===feat.id?5:1); total+=wt; return wt; });
+  let x=Math.random()*total; let pick=cand[cand.length-1];
+  for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<0){ pick=cand[i]; break; } }
+  if(pick.rarity==='SR'||pick.rarity==='SSR') S.pity.compSR=0; else S.pity.compSR++;
+  if(pick.rarity==='SSR') S.pity.compSSR=0; else S.pity.compSSR++;
+  return {kind:'companion', rarity:pick.rarity, id:pick.id};
+}
+function applyPullResult(res){
+  if(res.kind==='companion'){
+    const c = COMPANIONS.find(x=>x.id===res.id);
+    S.companion.owned[res.id] = true;
+    if(res.rarity==='EX'){ toast(t('comp.ex', {name:c.name})); addPts(100); grantAffection(10); }
+    else { toast(t('comp.new', {name:c.name, r:c.rarity})); addPts(30); grantAffection(4); }
+  } else {
+    const m=mascotOf(res.id);
+    if(!S.collection[res.id]) S.collection[res.id]={count:0, shards:0, stars:0};
+    const c=S.collection[res.id];
+    if(c.count===0){ c.count=1; toast(t('toast.new', {name:m.mascot})); }
+    else { c.count++; c.shards+=SHARDS[res.rarity]; }
+    if(res.rarity==='SSR') S.stats.ssrPulled++;
+    addPts(10);
+  }
+  S.stats.pulls++; track('pull',1);
+}
+function doPull(times, useGems){
+  syncEnergy();
+  const cost = times===10 ? (useGems?PULL10_GEMS:PULL10_COINS) : (useGems?PULL_COST_GEMS:PULL_COST_COINS);
+  if(useGems){ if(S.gems<cost){ showGemModal(); return; } spendGems(cost); }
+  else { if(S.coins<cost){ toast(t('toast.noCoins')); return; } spendCoins(cost); }
+  const results=[];
+  const guaranteed = times===10;
+  let srInBatch = false;
+  const exComp = activeEventCompanion();
+  for(let i=0;i<times;i++){
+    const force = guaranteed && i===times-1 && !srInBatch;
+    let r;
+    if(exComp && !S.companion.owned[exComp.id] && (Math.random() < EX_DROP_CHANCE || S.pity.ex >= 99)){
+      r = {kind:'companion', rarity:'EX', id:exComp.id};
+      S.pity.ex = 0;
+    } else {
+      S.pity.ex = (S.pity.ex||0) + 1;
+      if(Math.random() < COMPANION_DROP_CHANCE){
+        const comp = rollCompanion();
+        r = comp || rollOne(force);
+      } else {
+        r = rollOne(force);
+      }
+    }
+    results.push(r);
+    if(r.rarity==='SR'||r.rarity==='SSR'||r.rarity==='EX') srInBatch=true;
+  }
+  results.forEach(applyPullResult);
+  companionDailyCount().pulls += times;
+  grantAffection(times);
+  save(); render();
+  showPullResults(results);
+  companionReact('pull', {results});
+}
+
+/* ---------- Rivaux / classement ---------- */
+function getRivals(){
+  const seed = parseInt(weekNum().replace(/\D/g,''),10) || 1;
+  const rng = mulberry32((seed*2654435761) ^ 0x9e3779b9);
+  const names = seededShuffle(BOT_NAMES, rng);
+  const bots=[];
+  const topGaps=[260,180,120,70,25];
+  for(let i=0;i<5;i++) bots.push({name:names[i], xp:S.seasonXP+topGaps[i], avatar:i%10});
+  for(let i=5;i<49;i++){ const spread=(rng()-0.45)*22000; bots.push({name:names[i], xp:Math.max(0,Math.round(S.seasonXP+spread)), avatar:i%10}); }
+  bots.push({name:S.profile.name||'PLAYER', xp:S.seasonXP, avatar:S.profile.avatar, me:true});
+  bots.sort((a,b)=>b.xp-a.xp);
+  bots.forEach((b,i)=>b.rank=i+1);
+  return bots;
+}
+function tierFor(rank){ if(rank===1) return 'tier.M'; if(rank<=3) return 'tier.D'; if(rank<=8) return 'tier.P'; if(rank<=18) return 'tier.O'; if(rank<=35) return 'tier.A'; return 'tier.B'; }
+function tierColor(key){ return { 'tier.M':'var(--purple)','tier.D':'var(--cyan)','tier.P':'var(--green)','tier.O':'var(--gold)','tier.A':'var(--gray)','tier.B':'#b0764a'}[key]||'var(--gray)'; }
+
+/* ---------- Bannière / offres ---------- */
+function bannerGame(){ return GAMES[parseInt(weekNum().replace(/\D/g,''),10) % GAMES.length]; }
+function bannerUntil(){ const d=new Date(); const end=new Date(d); end.setHours(23,59,59,999); return end.getTime(); }
+function offerSeed(){ return Math.floor(Date.now()/(2*3600000)); }
+
+/* ---------- Reset journalier / hebdo ---------- */
+function syncCalendar(){
+  syncEnergy();
+  const td=today(), w=weekNum();
+  let needLogin = (S.login.last !== td);
+  if(S.daily !== td){
+    S.daily = td;
+    for(const m of MISSIONS) if(m.period==='daily') S.missions[m.id]={value:0, claimed:false};
+  }
+  if(S.weekly !== w){
+    S.weekly = w;
+    S.seasonXP = 0;
+    for(const m of MISSIONS) if(m.period==='weekly') S.missions[m.id]={value:0, claimed:false};
+    S.bp = {season:w, premium:false, claimed:[]};
+    S.banner = {game: bannerGame().id, until: bannerUntil()};
+  }
+  if(!S.banner.game || S.banner.until < Date.now()){ S.banner={game:bannerGame().id, until:bannerUntil()}; }
+  save();
+  return needLogin;
+}
+
+/* ---------- Nouveaux records (points de score) ---------- */
+function initBestCache(){
+  S.bestCache = {};
+  GAMES.forEach(g=>{ S.bestCache[g.id]=readBest(g.id); });
+  save(); saveBest();
+}
+function rescan(){
+  syncEnergy();
+  if(!S.bestCache) initBestCache();
+  let improved=[], totalCoins=0, totalPts=0;
+  GAMES.forEach(g=>{
+    const b = readBest(g.id);
+    if(b==null) return;
+    const cached = S.bestCache[g.id];
+    const isRecord = g.dir==='low' ? (cached==null || b<cached) : (cached==null || b>cached);
+    if(isRecord){
+      const oldRating = ratingForBest(g, cached);
+      const newRating = ratingForBest(g, b);
+      const deltaRating = newRating - oldRating;
+      const pts = 20 + Math.round(deltaRating * 5);
+      const coins = 100 + Math.min(400, Math.max(10, Math.round(deltaRating * 4)));
+      S.bestCache[g.id]=b;
+      addCoins(coins); addPts(pts, 'score'); totalCoins+=coins; totalPts+=pts;
+      S.stats.records++; track('record',1);
+      improved.push({g, coins, pts});
+    }
+  });
+  if(improved.length){
+    companionDailyCount().records += improved.length;
+    grantAffection(2*improved.length);
+    save(); saveBest(); render(); showRecordModal(improved, totalCoins, totalPts);
+    companionReact('record', {g:improved[0].g});
+  }
+  else { render(); }
+}
+
+/* ---------- Lancement d'un jeu ---------- */
+function playGame(id){
+  syncEnergy();
+  const g = GAMES.find(x=>x.id===id);
+  if(S.energy.value < ENERGY_COST){ showEnergyModal(); return; }
+  S.energy.value -= ENERGY_COST; S.energy.at = Date.now();
+  S.stats.plays++; companionDailyCount().plays++; addPts(5); track('play',1); syncCosmetics(); save(); render();
+  const url = g.folder+'/'+g.file;
+  const w = window.open(url, '_blank');
+  if(!w) toast(t('toast.popup'));
+}
+
+/* ---------- Boutique ---------- */
+function refillEnergy(){ if(S.gems<20){ showGemModal(); return; } spendGems(20); S.energy.value=ENERGY_MAX; S.energy.at=Date.now(); toast(t('toast.refilled')); save(); render(); }
+function fakeAd(){ const b=$('#adbtn'); if(!b) return; b.disabled=true; b.textContent=t('toast.adReading'); setTimeout(()=>{ S.energy.value=Math.min(ENERGY_MAX,S.energy.value+30); S.energy.at=Date.now(); b.disabled=false; b.textContent=t('toast.adWatch'); toast(t('toast.adGot')); save(); render(); },3000); }
+function buyCoinPack(gems,coins){ if(S.gems<gems){ showGemModal(); return; } spendGems(gems); addCoins(coins); toast(t('toast.coins',{n:coins})); save(); render(); }
+function claimDailyFree(){
+  const td=today();
+  if(S.dailyFree===td){ toast(t('toast.freeDone')); return; }
+  S.dailyFree=td; addCoins(150); S.energy.value=Math.min(ENERGY_MAX,S.energy.value+20); S.energy.at=Date.now(); toast(t('toast.freePack')); save(); render();
+}
+function buyPremiumPass(){ if(S.gems<300){ showGemModal(); return; } spendGems(300); S.bp.premium=true; toast(t('toast.premiumOn')); syncCosmetics(); save(); render(); }
+
+/* ---------- Battle pass ---------- */
+const BP_TIERS = 20;
+function bpThreshold(t){ return t*150; }
+function bpFreeReward(t){ return {coins: 50+t*20}; }
+function bpPremiumReward(t){ return {gems: 5+Math.floor(t/2)}; }
+function claimBPTier(n){
+  if(S.bp.claimed.includes(n)) return;
+  if(S.seasonXP < bpThreshold(n)){ toast(t('pass.need', {n:bpThreshold(n)})); return; }
+  S.bp.claimed.push(n);
+  const f=bpFreeReward(n); addCoins(f.coins);
+  if(S.bp.premium){ const p=bpPremiumReward(n); addGems(p.gems); }
+  toast(t('pass.claimed', {t:n})); save(); render();
+}
+
+/* ---------- Daily login ---------- */
+function claimLogin(){
+  const td=today();
+  if(S.login.last===td) return;
+  S.login.streak = (S.login.last===yesterday()) ? S.login.streak+1 : 1;
+  S.login.last=td;
+  let coins = 80 + S.login.streak*40;
+  let gems = (S.login.streak%7===0)?10:0;
+  addCoins(coins); if(gems) addGems(gems);
+  toast(t('toast.login', {n:S.login.streak, c:fmt(coins)}) + (gems?' +'+gems+' 💎':''));
+  grantAffection(2);
+  save(); render(); closeModal();
+  companionReact('welcome', {day:S.login.streak});
+  pickDailyGoal();
+}
+
+/* ---------- Toast & modal ---------- */
+let toastTimer=null;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block'; clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',2600); }
+function openModal(html){ $('#modalcard').innerHTML=html; $('#modal').classList.add('open'); }
+function closeModal(){ $('#modal').classList.remove('open'); $('#modalcard').innerHTML=''; }
+$('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+
+function showPullResults(results){
+  let html='<h2>'+ic('sparkle',18)+' '+t('modal.pull')+'</h2><div class="pullgrid">';
+  results.forEach((r,i)=>{ html+=`<div class="pcard back r${r.rarity}" id="pc${i}"></div>`; });
+  html+='</div><div class="row" style="margin-top:14px"><button class="primary" id="pullok" disabled style="flex:1">'+t('modal.ok')+'</button></div>';
+  openModal(html);
+  results.forEach((r,i)=>{
+    setTimeout(()=>{
+      const el=$('#pc'+i); if(!el) return;
+      el.classList.remove('back'); if(r.rarity==='SSR') el.classList.add('ssr');
+      if(r.kind==='companion'){
+        const c = COMPANIONS.find(x=>x.id===r.id);
+        el.innerHTML=`<div class="glyph" style="width:40px;height:46px;margin:0 auto">${companionAvatarSVG(c)}</div><div class="nm ${r.rarity}">${c.name}</div><div class="nm ${r.rarity}">${t('tab.companion')}</div>`;
+      } else {
+        const m=mascotOf(r.id);
+        el.innerHTML=`<div class="glyph ${r.rarity}">${ic(r.id,32)}</div><div class="nm ${r.rarity}">${m.mascot}</div><div class="nm ${r.rarity}">${r.rarity}</div>`;
+      }
+    }, 150+i*130);
+  });
+  setTimeout(()=>{ const b=$('#pullok'); if(b) b.disabled=false; }, 150+results.length*130+200);
+  $('#pullok').addEventListener('click', closeModal);
+}
+
+function showRecordModal(improved, coins, pts){
+  let html=`<h2>${ic('trophy',18)} ${t('modal.record')}</h2><div class="missions-list">`;
+  improved.forEach(r=>{ html+=`<div class="mission"><span style="display:inline-flex;color:var(--accent)">${ic(r.g.id,20)}</span><div><b>${r.g.title}</b><div class="prog">${r.g.dir==='low'?t('modal.record.lower'):t('modal.record.higher')} : ${fmt(readBest(r.g.id))}</div></div></div>`; });
+  html+=`</div><p class="muted" style="margin:12px 0">${t('modal.reward')} : <span class="gold">+${fmt(coins)} ${ic('coins',12)}</span> · <span class="gold">+${fmt(pts)} PTS</span></p><div class="row"><button class="primary" id="recok" style="flex:1">${t('modal.great')}</button></div>`;
+  openModal(html); $('#recok').addEventListener('click', closeModal);
+}
+
+function showLoginModal(){
+  const day = (S.login.streak>0 && S.login.last===yesterday()) ? S.login.streak+1 : 1;
+  let coins = 80 + day*40; let gems = (day%7===0)?10:0;
+  let html=`<h2>${ic('heart',18)} ${t('modal.login')}</h2>
+    <p>${t('modal.login.hello', {name:escapeHtml(S.profile.name), day})}</p>
+    <p class="muted">${t('modal.login.reward')} : +${fmt(coins)} ${ic('coins',12)} ${gems?'· +'+gems+' 💎':''}</p>
+    <p class="muted">${t('modal.login.warn')}</p>
+    <div class="row"><button class="primary" id="loginok" style="flex:1">${t('modal.login.claim')}</button></div>`;
+  openModal(html); $('#loginok').addEventListener('click', claimLogin);
+}
+
+/* ---------- Réglages ---------- */
+function openSettings(){
+  const themes=[['minimal',t('settings.theme.minimal')],['dark',t('settings.theme.dark')],['kawaii',t('settings.theme.kawaii')]];
+  const langs=[['fr','Français'],['en','English'],['de','Deutsch']];
+  let html=`<h2>${ic('sliders',18)} ${t('settings.title')}</h2>
+    <p class="muted" style="margin:0 0 6px">${t('settings.lang')}</p>
+    <div class="seg">${langs.map(([c,n])=>`<button class="${c===LANG?'on':''}" onclick="setLang('${c}')">${n}</button>`).join('')}</div>
+    <p class="muted" style="margin:14px 0 6px">${t('settings.theme')}</p>
+    <div class="seg">${themes.map(([c,n])=>`<button class="${c===THEME?'on':''}" onclick="setTheme('${c}')">${n}</button>`).join('')}</div>
+    <div class="row" style="margin-top:16px"><button class="primary" onclick="closeModal()" style="flex:1">${t('modal.ok')}</button></div>`;
+  openModal(html);
+}
+
+/* ---------- Icônes SVG (line) ---------- */
+const ICONS = {
+  coins:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/>',
+  gems:'<path d="M7 3h10l4 6-9 12L3 9z"/><path d="M3 9h18M9.5 3 12 9l2.5-6M12 21l-2.5-6L12 9l2.5 6z"/>',
+  bolt:'<path d="M13 2 4 14h6l-1 8 9-12h-6z"/>',
+  star:'<path d="M12 2l2.9 6.2 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3 1.3-6.5L2.5 9l6.6-.8z"/>',
+  target:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+  crown:'<path d="M3 8l4 3 5-6 5 6 4-3-2 11H5z"/>',
+  sliders:'<path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="17" r="2"/>',
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 9v12h14V9"/>',
+  gamepad:'<rect x="3" y="8" width="18" height="10" rx="4"/><path d="M8 12v3M6.5 13.5h3M15 12h.01M17 14h.01"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  check:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9 12l2 2 4-4"/>',
+  ticket:'<path d="M3 9V7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M13 6v2M13 11v2M13 16v2"/>',
+  bag:'<path d="M6 8h12l-1 12H7z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  trophy:'<path d="M8 3h8v5a4 4 0 0 1-8 0z"/><path d="M8 5H4v2a3 3 0 0 0 4 3M16 5h4v2a3 3 0 0 1-4 3M12 12v7M8 21h8"/>',
+  heart:'<path d="M12 20s-8-5.3-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 5.7-8 11-8 11z"/>',
+  flame:'<path d="M12 3s5 4.5 5 9a5 5 0 0 1-10 0c0-2 .7-3.2 1.4-4.3C10 9 12 8.5 12 7c1.6 1 2.5 3 2.5 3s.8-1.3 1.2-2.3C14.5 5.6 12 3 12 3z"/>',
+  play:'<path d="M7 4l13 8-13 8z"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  up:'<path d="M12 20V5M6 11l6-6 6 6"/>',
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 6.3"/><path d="M20 4v7h-7"/>',
+  tv:'<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 21h8M12 18v3"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+  alert:'<path d="M12 3 2 21h20z"/><path d="M12 10v5M12 18h.01"/>',
+  rocket:'<path d="M5 15c-1.5 1-2 4-2 4s3-.5 4-2c.5-.8.5-1.6 0-2s-1.2-.5-2 0z"/><path d="M9 13l6-6c1.5-1 4-1 4-1s0 2.5-1 4l-6 6-3-3z"/><circle cx="14.5" cy="9.5" r="1.3"/>',
+  lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  '2048':'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5" fill="currentColor" stroke="none"/>',
+  asteroids:'<path d="M12 4l3.5 6L12 12 8.5 10z"/><circle cx="5" cy="8" r="1.3"/><circle cx="19" cy="13" r="1.3"/><circle cx="8" cy="18" r="2"/><circle cx="17" cy="19" r="1.5"/>',
+  breakout:'<rect x="2" y="3" width="20" height="7" rx="1.5"/><circle cx="12" cy="15" r="2.5"/><rect x="7" y="20" width="10" height="2" rx="1"/>',
+  connectfour:'<circle cx="6" cy="6" r="2.5"/><circle cx="12" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="12" cy="12" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="12" cy="18" r="2.5"/>',
+  flappybird:'<path d="M3 16c0-5 4-7 9-7 4 0 7 1.5 7 4-1.5-1-3-1.5-4.5-1.5-2 0-3.5.8-4.5 2.5z"/><rect x="18" y="3" width="4" height="7" rx="1"/>',
+  hangman:'<path d="M5 21h9M8 21V4h6a2 2 0 0 1 2 2v1"/><circle cx="14" cy="9" r="2.5"/><path d="M14 11.5V14"/>',
+  mastermind:'<circle cx="5" cy="8" r="2.5"/><circle cx="12" cy="8" r="2.5"/><circle cx="19" cy="8" r="2.5"/><circle cx="8" cy="17" r="2.5"/><circle cx="16" cy="17" r="2.5"/>',
+  memory:'<rect x="4" y="5" width="11" height="14" rx="2"/><rect x="9" y="5" width="11" height="14" rx="2"/><path d="M12 10v4M10 12h4"/>',
+  minesweeper:'<path d="M7 3v18"/><path d="M7 4h10v6H7z"/><path d="M7 4l5 3-5 3z"/>',
+  pacman:'<circle cx="12" cy="12" r="8"/><path d="M12 12l7-5a8 8 0 0 1 0 10z" fill="currentColor" stroke="none"/>',
+  pong:'<rect x="3" y="3" width="2.5" height="18" rx="1"/><rect x="18.5" y="3" width="2.5" height="18" rx="1"/><circle cx="12" cy="12" r="2"/>',
+  rockpaperscissors:'<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8 8l12 7M8 16l12-7"/>',
+  simon:'<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>',
+  snake:'<path d="M4 14c2-6 6-6 8 0s6 6 8 0"/><circle cx="20" cy="8" r="2"/>',
+  spaceinvaders:'<path d="M8 5h8v4h2l1 4v4h-2v3h-2v-3H9v3H7v-3H5v-4l1-4h2z"/><path d="M6 9H3M18 9h3M8 13h8"/>',
+  sudoku:'<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 4v16M4 12h16"/><rect x="6.5" y="6.5" width="3.5" height="3.5" rx="1" fill="currentColor" stroke="none"/>',
+  tetris:'<rect x="4" y="4" width="5" height="5" rx="1"/><rect x="9" y="4" width="5" height="5" rx="1"/><rect x="14" y="4" width="5" height="5" rx="1"/><rect x="4" y="9" width="5" height="5" rx="1" fill="currentColor" stroke="none"/>',
+  tictactoe:'<path d="M6 6l4 4M10 6L6 10M16 6l4 4M20 6l-4 4"/><circle cx="17" cy="16" r="3.5"/>',
+  whackamole:'<path d="M5 18c0-4 3-6 7-6s7 2 7 6"/><path d="M5 18h14"/><path d="M14 5l3-3M17 2l3 3"/>',
+  wordle:'<rect x="4" y="5" width="4" height="4" rx="1"/><rect x="10" y="5" width="4" height="4" rx="1"/><rect x="16" y="5" width="4" height="4" rx="1"/><rect x="4" y="11" width="4" height="4" rx="1"/><rect x="10" y="11" width="4" height="4" rx="1"/><rect x="16" y="11" width="4" height="4" rx="1"/><rect x="4" y="17" width="4" height="4" rx="1" fill="currentColor" stroke="none"/>',
+  '15puzzle':'<rect x="4" y="4" width="4.5" height="4.5" rx="1"/><rect x="10" y="4" width="4.5" height="4.5" rx="1"/><rect x="16" y="4" width="4.5" height="4.5" rx="1"/><rect x="4" y="10" width="4.5" height="4.5" rx="1"/><rect x="10" y="10" width="4.5" height="4.5" rx="1"/><rect x="16" y="10" width="4.5" height="4.5" rx="1"/><rect x="4" y="16" width="4.5" height="4.5" rx="1"/><rect x="10" y="16" width="4.5" height="4.5" rx="1"/>',
+  lightsout:'<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.3 1 2.1h5c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  hanoi:'<path d="M7 3v17M12 3v17M17 3v17M4 20h16M4 6h6M4 9h8M4 12h10"/>',
+  reaction:'<path d="M13 2 4 14h6l-1 8 9-12h-6z"/>',
+  dinorun:'<path d="M5 20v-6c0-4 3-7 7-7s7 3 7 7v6h-3v-4h-3v4z"/><circle cx="17" cy="8" r="1.3"/>',
+};
+function ic(name, s){ s=s||16; const d=ICONS[name]||''; return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`; }
+const ICONS_FILLED = {
+  home:'<path d="M12 3.2 21 11v9.5a.5.5 0 0 1-.5.5H13.5v-5h-3v5H3.5a.5.5 0 0 1-.5-.5V11z" fill="url(#gg)"/>',
+  gamepad:'<path d="M6 7h12a5 5 0 0 1 5 5v2a5 5 0 0 1-5 5h-1.1l-1.3-1.8h-7.2L6.9 19H6a5 5 0 0 1-5-5v-2a5 5 0 0 1 5-5zm1.2 5.3a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm4.3 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm4.3 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" fill="url(#gg)"/>',
+  sparkle:'<path d="M12 2l2.2 5.8L20 10l-5.8 2.2L12 18l-2.2-5.8L4 10l5.8-2.2z" fill="url(#gg)"/>',
+  box:'<path d="M12 2.5 21 6.5v11l-9 4-9-4v-11z" fill="url(#gg)"/><path d="M3 6.5l9 4 9-4" fill="none" stroke="url(#gg)" stroke-width="1.5" opacity=".65"/>',
+  check:'<path d="M7 4h10a1 1 0 0 1 1 1v15l-6-3-6 3V5a1 1 0 0 1 1-1z" fill="url(#gc)"/>',
+  ticket:'<path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z" fill="url(#gp)"/>',
+  bag:'<path d="M6.5 7.5h11l-1.2 13H7.7z" fill="url(#gg)"/><path d="M9 7.5V6a3 3 0 0 1 6 0v1.5" fill="none" stroke="url(#gg)" stroke-width="1.8"/>',
+  trophy:'<path d="M7 2h10v5a5 5 0 0 1-10 0z" fill="url(#gg)"/><path d="M7 4H3v3a4 4 0 0 0 5.5 3.8A6 6 0 0 1 7 7V4zM17 4h4v3a4 4 0 0 1-5.5 3.8A6 6 0 0 0 17 7V4z" fill="url(#gg)"/><path d="M10.5 12h3v3h-3z" fill="url(#gg)"/><path d="M12 15v2M9 20h6" fill="none" stroke="url(#gg)" stroke-width="1.8" stroke-linecap="round"/>',
+  user:'<circle cx="12" cy="8" r="4" fill="url(#gb)"/><path d="M4 20.5c0-3.9 3.6-6 8-6s8 2.1 8 6V21H4z" fill="url(#gb)"/>',
+  heart:'<path d="M12 21S4 14.8 4 9.5A4.5 4.5 0 0 1 12 6a4.5 4.5 0 0 1 8 3.5C20 14.8 12 21 12 21z" fill="url(#gp)"/>',
+  coins:'<path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 4.5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9z" fill="url(#gg)"/>',
+  gems:'<path d="M7 3h10l4 6-9 12L3 9z" fill="url(#gp)"/><path d="M3 9h18M9.5 3 12 9l2.5-6M12 21l-2.5-6L12 9l2.5 6z" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1.1"/>',
+  bolt:'<path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="url(#gg)"/>',
+  star:'<path d="M12 2l2.9 6.2 6.6.8-4.9 4.5 1.3 6.5L12 17l-5.9 3 1.3-6.5L2.5 9l6.6-.8z" fill="url(#gg)"/>',
+  target:'<circle cx="12" cy="12" r="9" fill="url(#gb)"/><circle cx="12" cy="12" r="4.4" fill="rgba(255,255,255,.38)"/>',
+};
+function icon(name, s){ s=s||16; const f=ICONS_FILLED[name]; if(!f) return ic(name, s); return `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill-rule="evenodd">${f}</svg>`; }
+
+/* ---------- i18n additions (cosmétiques / premium / urgence) ---------- */
+const I18N_EXT = {
+  fr:{'tab.profile':'PROFIL','home.boost':'Boost {x}× actif !',
+    'shop.premium':'Gemmes premium','shop.premiumNote':'Simulation — aucun paiement réel. Débloque la progression rapide.',
+    'shop.boost':'Boost XP','shop.boostDesc':'Points ×2 pendant 1 h.','shop.boostOn':'Boost ×2 activé (1 h) !','shop.cosmetics':'Cosmétiques',
+    'toast.bought':'Achat réussi ! +{n} 💎','toast.cosmetic':'Cosmétique débloqué : {name} !','toast.equip':'Équipé : {name}',
+    'modal.energy':'Énergie épuisée','modal.energy.text':'Recharge immédiatement pour continuer à jouer.','modal.energy.refill':'Recharger (20 💎)','modal.energy.buy':'Acheter des gemmes','modal.energy.ad':'Regarder une pub',
+    'profile.title':'Profil','profile.avatar':'Avatar','profile.frame':'Cadre','profile.titles':'Titres','profile.noTitle':'Aucun titre','profile.equip':'Équiper',
+    'frame.default':'Par défaut','frame.silver':'Argent','frame.gold':'Or','frame.ssr':'Éclat SSR','frame.neon':'Néon','frame.sakura':'Sakura','frame.diamond':'Diamant',
+    'title.rookie':'Recrue','title.grinder':'Gros joueur','title.ssr_hunter':'Chasseur de SSR','title.collector':'Collectionneur','title.champion':'Champion','title.whale':'Baleine','title.veteran':'Vétéran','title.completionist':'Complétionniste',
+    'event':'Événement :','event.rate':'taux doublé sur {name} !','event.ends':'Fin dans'},
+  en:{'tab.profile':'PROFILE','home.boost':'Boost {x}× active!',
+    'shop.premium':'Premium gems','shop.premiumNote':'Simulation — no real payment. Unlocks fast progression.',
+    'shop.boost':'XP Boost','shop.boostDesc':'Points ×2 for 1 hour.','shop.boostOn':'Boost ×2 activated (1h)!','shop.cosmetics':'Cosmetics',
+    'toast.bought':'Purchase complete! +{n} 💎','toast.cosmetic':'Cosmetic unlocked: {name}!','toast.equip':'Equipped: {name}',
+    'modal.energy':'Out of energy','modal.energy.text':'Refill now to keep playing.','modal.energy.refill':'Refill (20 💎)','modal.energy.buy':'Buy gems','modal.energy.ad':'Watch an ad',
+    'profile.title':'Profile','profile.avatar':'Avatar','profile.frame':'Frame','profile.titles':'Titles','profile.noTitle':'No title','profile.equip':'Equip',
+    'frame.default':'Default','frame.silver':'Silver','frame.gold':'Gold','frame.ssr':'SSR Glow','frame.neon':'Neon','frame.sakura':'Sakura','frame.diamond':'Diamond',
+    'title.rookie':'Rookie','title.grinder':'Grinder','title.ssr_hunter':'SSR Hunter','title.collector':'Collector','title.champion':'Champion','title.whale':'Whale','title.veteran':'Veteran','title.completionist':'Completionist',
+    'event':'Event:','event.rate':'doubled rate on {name}!','event.ends':'Ends in'},
+  de:{'tab.profile':'PROFIL','home.boost':'Boost {x}× aktiv!',
+    'shop.premium':'Premium-Edelsteine','shop.premiumNote':'Simulation — keine echte Zahlung. Schaltet schnelles Vorankommen frei.',
+    'shop.boost':'XP-Boost','shop.boostDesc':'Punkte ×2 für 1 Stunde.','shop.boostOn':'Boost ×2 aktiviert (1 Std.)!','shop.cosmetics':'Kosmetik',
+    'toast.bought':'Kauf abgeschlossen! +{n} 💎','toast.cosmetic':'Kosmetik freigeschaltet: {name}!','toast.equip':'Ausgerüstet: {name}',
+    'modal.energy':'Keine Energie','modal.energy.text':'Jetzt aufladen, um weiterzuspielen.','modal.energy.refill':'Aufladen (20 💎)','modal.energy.buy':'Edelsteine kaufen','modal.energy.ad':'Werbung ansehen',
+    'profile.title':'Profil','profile.avatar':'Avatar','profile.frame':'Rahmen','profile.titles':'Titel','profile.noTitle':'Kein Titel','profile.equip':'Ausrüsten',
+    'frame.default':'Standard','frame.silver':'Silber','frame.gold':'Gold','frame.ssr':'SSR-Glanz','frame.neon':'Neon','frame.sakura':'Sakura','frame.diamond':'Diamant',
+    'title.rookie':'Neuling','title.grinder':'Grinder','title.ssr_hunter':'SSR-Jäger','title.collector':'Sammler','title.champion':'Champion','title.whale':'Wal','title.veteran':'Veteran','title.completionist':'Vollender',
+    'event':'Event:','event.rate':'doppelte Rate auf {name}!','event.ends':'Endet in'},
+};
+for(const L in I18N_EXT){ if(I18N[L]) Object.assign(I18N[L], I18N_EXT[L]); }
+
+/* ---------- Cosmétiques & boutique premium (simulée) ---------- */
+const FRAMES = ['default','silver','gold','ssr','neon','sakura','diamond'];
+const TITLES = ['rookie','grinder','ssr_hunter','collector','champion','whale','veteran','completionist'];
+const AVATARS = ['🦊','🐸','🐙','👾','🐲','🦄','🐢','🦉','🐯','🤖'];
+function myRank(){ return getRivals().find(b=>b.me).rank; }
+function frameUnlock(f){
+  switch(f){
+    case 'default': return true;
+    case 'silver': return S.level >= 3;
+    case 'gold': return S.level >= 8;
+    case 'ssr': return S.stats.ssrPulled >= 1;
+    case 'neon': return S.cosmetics.ownedFrames.includes('neon');
+    case 'sakura': return S.bp.premium;
+    case 'diamond': return myRank() <= 3;
+    default: return false;
+  }
+}
+function titleUnlock(tid){
+  switch(tid){
+    case 'rookie': return true;
+    case 'grinder': return S.stats.plays >= 50;
+    case 'ssr_hunter': return S.stats.ssrPulled >= 1;
+    case 'collector': return ownedCount() >= 10;
+    case 'champion': return myRank() <= 3;
+    case 'whale': return S.stats.gemsSpentTotal >= 1000;
+    case 'veteran': return S.level >= 10;
+    case 'completionist': return ownedCount() >= GAMES.length;
+    default: return false;
+  }
+}
+function syncCosmetics(){
+  let dirty=false;
+  FRAMES.forEach(f=>{ if(frameUnlock(f) && !S.cosmetics.ownedFrames.includes(f)){ S.cosmetics.ownedFrames.push(f); toast(t('toast.cosmetic', {name:t('frame.'+f)})); dirty=true; } });
+  TITLES.forEach(tid=>{ if(titleUnlock(tid) && !S.cosmetics.ownedTitles.includes(tid)){ S.cosmetics.ownedTitles.push(tid); toast(t('toast.cosmetic', {name:t('title.'+tid)})); dirty=true; } });
+  if(dirty) save();
+}
+function equipFrame(f){ if(!S.cosmetics.ownedFrames.includes(f)) return; S.cosmetics.frame=f; toast(t('toast.equip', {name:t('frame.'+f)})); save(); render(); }
+function equipTitle(tid){ if(tid && !S.cosmetics.ownedTitles.includes(tid)) return; S.cosmetics.title=tid; toast(t('toast.equip', {name:tid?t('title.'+tid):t('profile.noTitle')})); save(); render(); }
+function buyFrame(f, cost){ if(S.gems<cost){ showGemModal(); return; } if(S.cosmetics.ownedFrames.includes(f)){ equipFrame(f); return; } spendGems(cost); S.cosmetics.ownedFrames.push(f); equipFrame(f); }
+function buyGems(n){ addGems(n); toast(t('toast.bought', {n})); save(); render(); }
+function buyBoost(){ if(S.gems<30){ showGemModal(); return; } spendGems(30); S.cosmetics.boostUntil = Date.now() + 3600000; toast(t('shop.boostOn')); save(); render(); }
+function showGemModal(){
+  let html=`<h2>${ic('gems',18)} ${t('shop.premium')}</h2>
+    <p class="muted">${t('shop.premiumNote')}</p>
+    <div class="seg col">
+      ${[[100,'0,99 €',1],[550,'4,99 €',0],[1200,'9,99 €',0],[3000,'19,99 €',1]].map(([g,p,best])=>`<button class="${best?'gold':''}" onclick="buyGems(${g})"><span>${g} 💎</span><span>${p}</span></button>`).join('')}
+    </div>
+    <div class="row" style="margin-top:12px"><button class="primary" onclick="closeModal()" style="flex:1">${t('modal.ok')}</button></div>`;
+  openModal(html);
+}
+function showEnergyModal(){
+  let html=`<h2>${ic('bolt',18)} ${t('modal.energy')}</h2>
+    <p class="muted">${t('modal.energy.text')}</p>
+    <div class="seg col">
+      <button class="gem" onclick="refillEnergy()">${t('modal.energy.refill')}</button>
+      <button class="gold" onclick="showGemModal()">${t('modal.energy.buy')}</button>
+      <button onclick="fakeAd()">${t('modal.energy.ad')}</button>
+    </div>`;
+  openModal(html);
+}
+function viewProfile(){
+  const html=`<div class="grid">
+    <div class="panel">
+      <h2>${ic('user',16)} ${t('profile.title')}</h2>
+      <div class="player-card frame-${S.cosmetics.frame}">
+        <div style="font-size:40px">${AVATARS[S.profile.avatar]}</div>
+        <div>
+          <h2 style="margin:0">${escapeHtml(S.profile.name)} ${S.cosmetics.title?`<span class="badge" style="background:var(--accent);color:var(--accent-ink)">${t('title.'+S.cosmetics.title)}</span>`:''}</h2>
+          <div class="muted">${t('home.level')} ${S.level} · VIP ${vipLevel()} · ${fmt(S.xp)} PTS</div>
+        </div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>${ic('user',16)} ${t('profile.avatar')}</h2>
+      <div class="seg">${AVATARS.map((a,i)=>`<button class="${S.profile.avatar===i?'on':''}" onclick="setAvatar(${i})" style="font-size:20px">${a}</button>`).join('')}</div>
+    </div>
+    <div class="panel">
+      <h2>${ic('sparkle',16)} ${t('profile.frame')}</h2>
+      <div class="seg">${FRAMES.map(f=>{
+        const owned = S.cosmetics.ownedFrames.includes(f);
+        const active = S.cosmetics.frame===f;
+        return `<button class="${active?'on':''}" onclick="equipFrame('${f}')" title="${t('frame.'+f)}">
+          <span class="frame-box frame-${f}">${owned?'✓':'🔒'}</span> ${t('frame.'+f)}</button>`;
+      }).join('')}</div>
+    </div>
+    <div class="panel">
+      <h2>${ic('star',16)} ${t('profile.titles')}</h2>
+      <div class="seg">${['__none__',...TITLES].map(tid=>{
+        const owned = tid==='__none__' ? true : S.cosmetics.ownedTitles.includes(tid);
+        const active = S.cosmetics.title===tid;
+        return `<button class="${active?'on':''}" onclick="equipTitle(${tid==='__none__'?'null':"'"+tid+"'"})" style="${owned?'':'opacity:.4'}">${tid==='__none__'?t('profile.noTitle'):t('title.'+tid)}</button>`;
+      }).join('')}</div>
+    </div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+function setAvatar(i){ S.profile.avatar=i; save(); render(); }
+
+/* ---------- Échappement ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ============================================================
+   COMPAGNON IA — qwen2.5:3b via Ollama
+   Le LLM ne génère QUE du texte ; l'état reste déterministe en JS.
+   ============================================================ */
+const COMPANION = {
+  name:'NOVA', avatar:'🦊', style:'coach',
+  customPersona:'',
+  enabled:true,
+  engine:'ollama',                    // 'ollama' (local) | 'webllm' (embarqué navigateur)
+  model:'qwen2.5:3b', endpoint:'http://localhost:11434/api/chat',
+  webllmModel:'Qwen2.5-3B-Instruct-q4f16_1-MLC',
+  num_predict:70, temperature:0.85, timeoutMs:8000,
+  historyMax:12, idleMs:180000,
+};
+const PERSONA = {
+  coach: "Tu es {name}, coach complice et taquin du joueur d'ARCADE GACHA. Tu l'encourages avec chaleur mais tu le provoques gentiment pour qu'il rejoue. Réponds en 1 à 2 phrases courtes, sans casser le personnage.",
+  rival: "Tu es {name}, le rival provocateur du joueur. Tu le défies et tu le pousses à faire mieux pour te battre. Réponds en 1 à 2 phrases courtes.",
+  kawaii: "Tu es {name}, une mascotte kawaii surexcitée. Tu hypes chaque action du joueur comme un événement. Réponds en 1 à 2 phrases courtes et enthousiastes.",
+  sword: "Tu es {name}, une épéiste élégante à l'ombrelle, calme et précise, capable d'arrêter le temps. Réponds en 1 à 2 phrases courtes, posément.",
+  witch: "Tu es {name}, une diseuse de bonne aventure au regard mystérieux, qui lit les cartes et le destin. Réponds en 1 à 2 phrases courtes, de façon envoûtante.",
+  gentle: "Tu es {name}, une compagne douce et attentionnée, qui réconforte et encourage avec tendresse. Réponds en 1 à 2 phrases courtes.",
+  fiery: "Tu es {name}, une compagne fougueuse et pleine d'énergie, qui pousse le joueur à foncer sans réfléchir. Réponds en 1 à 2 phrases courtes.",
+  calm: "Tu es {name}, une compagne calme et sage, qui donne des conseils mesurés et apaisants. Réponds en 1 à 2 phrases courtes.",
+};
+const AFFECTION_MILESTONES = {20:{coins:100}, 40:{gems:5}, 60:{coins:250}, 80:{gems:12}, 100:{gems:25}};
+const DAILY_GOALS = [
+  {id:'plays',    label:'goal.plays',    type:'plays',    target:3, reward:{coins:120}},
+  {id:'pulls',    label:'goal.pulls',    type:'pulls',    target:2, reward:{coins:150}},
+  {id:'records',  label:'goal.records',  type:'records',  target:1, reward:{gems:3}},
+  {id:'missions', label:'goal.missions', type:'missions', target:3, reward:{gems:5}},
+];
+
+let companionHistory = LS.getJSON('gacha.companion.history') || [];
+let offlineMode = false;
+let bubbleTimer = null;
+
+function companionPersona(){
+  const c = activeCompanion();
+  const base = PERSONA[c.style] || PERSONA.coach;
+  const tr = traitOf(c);
+  let extra = '';
+  if(tr.quirk) extra += '\nTa particularité : ' + tr.quirk + '.';
+  if(tr.catch) extra += '\nTon slogan : « ' + tr.catch + ' ».';
+  if(tr.bio) extra += '\nTon histoire : ' + tr.bio;
+  return base.replace(/\{name\}/g, c.name) + extra + '\nRéponds en ' + (LANG_NAME[LANG]||'FRANÇAIS') + '.';
+}
+function comp(id,name,rarity,style,element,desc,hair,hair2,eye,acc,hairStyle){
+  return {id,name,rarity,style,element,desc,avatar:{skin:'#ffe6d8',hair,hair2,eye,pupil:'#3a1a10',brow:'#8a6a5a',mouth:'#c06a5a',blush:'#ffb0a0',outfit:hair2,outfit2:hair,acc,hairStyle}};
+}
+const COMPANIONS = [
+  { id:'hatori', name:'HATORI', rarity:'SSR', style:'sword', element:'Cosmos', desc:'Épéiste à l\'ombrelle qui arrête le temps.',
+    avatar:{skin:'#ffe7da', hair:'#3a2c4f', hair2:'#6a5a8f', eye:'#e0b23c', pupil:'#3a2a10', brow:'#6a4a5a', mouth:'#c06a5a', blush:'#ffb0a0', outfit:'#2c2440', outfit2:'#4a3b6b', acc:'ribbon', hairStyle:'long'} },
+  { id:'kuro', name:'KURO', rarity:'SSR', style:'witch', element:'Psyché', desc:'Diseuse de bonne aventure occulte.',
+    avatar:{skin:'#ffe6e0', hair:'#a882ff', hair2:'#d3c2ff', eye:'#b06cff', pupil:'#2a1240', brow:'#7a5a8a', mouth:'#a05a8a', blush:'#ffa3c0', outfit:'#241a3d', outfit2:'#3c2a66', acc:'hat', hairStyle:'long'} },
+  { id:'astrid', name:'ASTRID', rarity:'SSR', style:'calm', element:'Astre', desc:'Gardienne des étoiles, sereine et lointaine.',
+    avatar:{skin:'#ffeaf0', hair:'#e8eaf6', hair2:'#ffffff', eye:'#4fc3e0', pupil:'#123a48', brow:'#8a8aa8', mouth:'#b06a8a', blush:'#ffb0c8', outfit:'#3a2a5a', outfit2:'#6a5aa8', acc:'star', hairStyle:'long'} },
+  { id:'nova', name:'NOVA', rarity:'SR', style:'coach', element:'Lumière', desc:'Coach complice, toujours là pour te motiver.',
+    avatar:{skin:'#ffe3d1', hair:'#ff9dc6', hair2:'#ffc9e2', eye:'#c47ae0', pupil:'#3a2340', brow:'#c98a6a', mouth:'#d6726a', blush:'#ffa3bd', outfit:'#ffd9c4', outfit2:'#ffb8a8', acc:'bow', hairStyle:'long'} },
+  { id:'vex', name:'VEX', rarity:'SR', style:'rival', element:'Éclair', desc:'Rival provocateur, il te pousse à te dépasser.',
+    avatar:{skin:'#ffe0d4', hair:'#6fd0d8', hair2:'#a9e6ec', eye:'#35c2d8', pupil:'#12323a', brow:'#4a6a70', mouth:'#c05a6a', blush:'#ff9fb0', outfit:'#2b3a55', outfit2:'#3f5577', acc:'star', hairStyle:'short'} },
+  { id:'yuki', name:'YUKI', rarity:'SR', style:'gentle', element:'Glace', desc:'Douce comme la neige, apaisante.',
+    avatar:{skin:'#ffe9ec', hair:'#dcecff', hair2:'#ffffff', eye:'#6fb6ff', pupil:'#123a5a', brow:'#7a9ab0', mouth:'#c06a8a', blush:'#ffb0c8', outfit:'#dcecff', outfit2:'#a8c8e8', acc:'ribbon', hairStyle:'long'} },
+  { id:'ember', name:'EMBER', rarity:'SR', style:'fiery', element:'Feu', desc:'Fougueuse, elle fonce tête baissée.',
+    avatar:{skin:'#ffe4d6', hair:'#ff6a3a', hair2:'#ffb08a', eye:'#ff8a2a', pupil:'#5a2010', brow:'#8a4a2a', mouth:'#c05a3a', blush:'#ff8a6a', outfit:'#5a2a1a', outfit2:'#8a4a2a', acc:'none', hairStyle:'long'} },
+  { id:'rin', name:'RIN', rarity:'SR', style:'calm', element:'Vent', desc:'Sage et mesurée, le vent la suit.',
+    avatar:{skin:'#ffe9e0', hair:'#6fce9a', hair2:'#a8e8c8', eye:'#2fb27a', pupil:'#123a2a', brow:'#4a8a6a', mouth:'#b06a5a', blush:'#ffb0a0', outfit:'#dce8d0', outfit2:'#a8c8a0', acc:'bow', hairStyle:'short'} },
+  { id:'tori', name:'TORI', rarity:'SR', style:'kawaii', element:'Fleur', desc:'Pétillante, elle rayonne de joie.',
+    avatar:{skin:'#ffe6f0', hair:'#ff9db8', hair2:'#ffc9e2', eye:'#ff6fa0', pupil:'#5a1030', brow:'#c98a8a', mouth:'#d6726a', blush:'#ffa3bd', outfit:'#ffe0ec', outfit2:'#ffc0d8', acc:'flower', hairStyle:'twin'} },
+  { id:'mochi', name:'MOCHI', rarity:'R', style:'kawaii', element:'Fleur', desc:'Mascotte surexcitée, tout est trop bien !',
+    avatar:{skin:'#ffe9dc', hair:'#ffd98a', hair2:'#fff0c2', eye:'#ff8fb1', pupil:'#5a2030', brow:'#c98a6a', mouth:'#d6726a', blush:'#ffb0c0', outfit:'#fff0c2', outfit2:'#ffe0a0', acc:'flower', hairStyle:'twin'} },
+  { id:'pippi', name:'PIPPI', rarity:'R', style:'kawaii', element:'Sucre', desc:'Petite boule de sucre pétillante.',
+    avatar:{skin:'#ffe9dc', hair:'#ffb0c0', hair2:'#ffd0dc', eye:'#b06a4a', pupil:'#4a2a1a', brow:'#c98a6a', mouth:'#d6726a', blush:'#ffb0c0', outfit:'#fff0e8', outfit2:'#ffd8c8', acc:'bow', hairStyle:'short'} },
+  { id:'misty', name:'MISTY', rarity:'R', style:'gentle', element:'Brume', desc:'Douce brume du matin, discrète.',
+    avatar:{skin:'#ffe9f0', hair:'#b0c4d8', hair2:'#d8e4ec', eye:'#6a8aaa', pupil:'#1a2a3a', brow:'#7a8a9a', mouth:'#b06a8a', blush:'#ffb0c8', outfit:'#d8e0ea', outfit2:'#b0c0d0', acc:'ribbon', hairStyle:'long'} },
+  { id:'cocoa', name:'COCOA', rarity:'R', style:'gentle', element:'Chocolat', desc:'Chaleureuse comme un chocolat chaud.',
+    avatar:{skin:'#ffe6da', hair:'#8a5a3a', hair2:'#b08a6a', eye:'#6a4a2a', pupil:'#2a1a0a', brow:'#6a4a3a', mouth:'#a05a3a', blush:'#ffb0a0', outfit:'#d8b8a0', outfit2:'#b89070', acc:'none', hairStyle:'short'} },
+  { id:'daisy', name:'DAISY', rarity:'R', style:'kawaii', element:'Fleur', desc:'Ensoleillée, elle adore les fleurs.',
+    avatar:{skin:'#ffe9dc', hair:'#ffd98a', hair2:'#fff0c2', eye:'#3a9a5a', pupil:'#1a3a20', brow:'#8a7a4a', mouth:'#c08a5a', blush:'#ffb0a0', outfit:'#fff0c2', outfit2:'#ffe0a0', acc:'flower', hairStyle:'long'} },
+  { id:'nook', name:'NOOK', rarity:'R', style:'calm', element:'Bois', desc:'Tranquille, elle veille sur la forêt.',
+    avatar:{skin:'#ffe6d8', hair:'#7a8a5a', hair2:'#a8b890', eye:'#5a7a4a', pupil:'#1a2a1a', brow:'#6a7a5a', mouth:'#a06a5a', blush:'#ffb0a0', outfit:'#c8d8a8', outfit2:'#a0b878', acc:'none', hairStyle:'short'} },
+  { id:'bubble', name:'BUBBLE', rarity:'R', style:'kawaii', element:'Eau', desc:'Pétillante, elle fait des bulles partout.',
+    avatar:{skin:'#ffe9f0', hair:'#8fd0e8', hair2:'#c0e8f0', eye:'#3db7d0', pupil:'#123a48', brow:'#5a8aa0', mouth:'#b06a8a', blush:'#ffb0c8', outfit:'#c0e8f0', outfit2:'#8fd0e8', acc:'star', hairStyle:'long'} },
+  { id:'pepper', name:'PEPPER', rarity:'N', style:'fiery', element:'Piquant', desc:'Piquante et impatiente.',
+    avatar:{skin:'#ffe4d6', hair:'#c04030', hair2:'#e08070', eye:'#8a2a20', pupil:'#2a0a08', brow:'#7a3a2a', mouth:'#a04a3a', blush:'#ff8a6a', outfit:'#e8c0b0', outfit2:'#c89078', acc:'none', hairStyle:'short'} },
+  { id:'berry', name:'BERRY', rarity:'N', style:'kawaii', element:'Baie', desc:'Petite baie sucrée.',
+    avatar:{skin:'#ffe9f0', hair:'#b06cc0', hair2:'#d0a0e0', eye:'#8a4aa0', pupil:'#2a0a30', brow:'#7a4a8a', mouth:'#a05a8a', blush:'#ffb0c8', outfit:'#f0d8f0', outfit2:'#d0a8d8', acc:'bow', hairStyle:'short'} },
+  { id:'twig', name:'TWIG', rarity:'N', style:'calm', element:'Brindille', desc:'Toute simple, les pieds sur terre.',
+    avatar:{skin:'#ffe6d8', hair:'#a08a6a', hair2:'#c8b89a', eye:'#6a5a3a', pupil:'#1a100a', brow:'#7a6a4a', mouth:'#a06a5a', blush:'#ffb0a0', outfit:'#e0d0b0', outfit2:'#b8a080', acc:'none', hairStyle:'short'} },
+  { id:'puddle', name:'PUDDLE', rarity:'N', style:'gentle', element:'Flaque', desc:'Calme comme une flaque après la pluie.',
+    avatar:{skin:'#ffe9f0', hair:'#a8d8e8', hair2:'#d0ecf0', eye:'#6ab8d0', pupil:'#123040', brow:'#6a8a9a', mouth:'#b06a8a', blush:'#ffb0c8', outfit:'#c8e8f0', outfit2:'#a0d0e0', acc:'none', hairStyle:'short'} },
+  comp('eclipse','ECLIPSE','EX','witch','Ombre','Insaisissable, elle ne sort que lors des éclipses.','#2a1a3a','#5a3a7a','#ff5ca8','hat','long'),
+  comp('nebula','NEBULA','EX','calm','Nébuleuse','Née des étoiles, réservée aux grands événements.','#3a2a6a','#7a6ac0','#c47ae0','star','long'),
+  comp('aurora','AURORA','EX','gentle','Aurore','La lumière boréale faite compagne.','#6ad8c0','#c0f0e8','#2fb27a','ribbon','long'),
+  comp('solstice','SOLSTICE','EX','sword','Solstice','Lame dorée du plus long jour.','#e0b23c','#ffe0a0','#ff8a2a','ribbon','long'),
+  comp('halley','HALLEY','EX','calm','Comète','Elle ne passe qu une fois par éon.','#8fd0e8','#d8ecff','#3db7d0','star','long'),
+  comp('luna','LUNA','SSR','witch','Lune','Prêtresse de la nuit.','#5a4a8a','#9a8ac8','#b06cff','hat','long'),
+  comp('orion','ORION','SSR','calm','Astre','Chasseur des étoiles filantes.','#3a3a5a','#6a6a9a','#6ab8ff','star','short'),
+  comp('kiyo','KIYO','SR','calm','Rosée','Fraîche comme la rosée du matin.','#6fce9a','#b8e8d0','#2fb27a','flower','short'),
+  comp('mira','MIRA','SR','gentle','Mirage','Douce illusion du désert.','#e0b08a','#ffd8c0','#c08a5a','ribbon','long'),
+  comp('sasha','SASHA','SR','fiery','Foudre','Rapide comme la foudre.','#ffd93a','#fff0a0','#ff8a2a','star','short'),
+  comp('noa','NOA','SR','calm','Rivière','Calme comme une rivière paisible.','#6ab8d8','#a8d8ec','#3db7d0','ribbon','long'),
+  comp('lila','LILA','SR','kawaii','Lilas','Sucrée et parfumée.','#c08aff','#e0c8ff','#9a5cf0','bow','twin'),
+  comp('ruby','RUBY','SR','fiery','Rubis','Éclatante comme un rubis.','#ff5a5a','#ffa0a0','#c02020','none','long'),
+  comp('clover','CLOVER','R','gentle','Trèfle','Porte-bonheur des champs.','#5ab86a','#a0e0a8','#2f8a3a','none','short'),
+  comp('willow','WILLOW','R','calm','Saule','Douce comme un saule.','#8ab86a','#c0e0a8','#5a8a3a','ribbon','long'),
+  comp('skye','SKYE','R','gentle','Ciel','La tête dans les nuages.','#8fd0e8','#c0e8f0','#3db7d0','star','short'),
+  comp('peach','PEACH','R','kawaii','Pêche','Douce comme une pêche.','#ffb08a','#ffd8c0','#e0783a','bow','twin'),
+  comp('mint','MINT','R','calm','Menthe','Fraîche comme la menthe.','#8fe0c0','#c0f0e0','#2fb27a','none','short'),
+  comp('coral','CORAL','R','kawaii','Corail','Vive comme un récif.','#ff7a8c','#ffb0c0','#c04a5a','flower','twin'),
+  comp('ivy','IVY','R','calm','Lierre','Elle grimpe partout.','#4a9a5a','#8ac88a','#2a7a3a','none','long'),
+  comp('poppy','POPPY','R','fiery','Coquelicot','Rouge comme un coquelicot.','#ff5a2a','#ffa06a','#c02a1a','flower','short'),
+  comp('sunny','SUNNY','R','kawaii','Soleil','Un rayon de soleil.','#ffd93a','#fff0a0','#e0a02a','star','twin'),
+  comp('dusty','DUSTY','N','calm','Poussière','Simple et terre à terre.','#a08a6a','#c8b8a0','#6a5a3a','none','short'),
+  comp('pixel','PIXEL','N','kawaii','Pixel','Née dans un écran.','#6a8ad8','#a0b8f0','#4a6ac8','star','short'),
+  comp('patch','PATCH','N','gentle','Pièce','Cousue de mille couleurs.','#b08a6a','#d0b8a0','#6a4a2a','none','short'),
+  comp('rusty','RUSTY','N','fiery','Rouille','Usée mais chaleureuse.','#c06a3a','#e0a06a','#8a4a1a','none','short'),
+  comp('cobble','COBBLE','N','calm','Pavé','Solide comme un pavé.','#8a8a8a','#b8b8b8','#5a5a5a','none','short'),
+  comp('moth','MOTH','N','gentle','Phalène','Attirée par la lumière.','#c0b8a8','#e0d8c8','#6a5a3a','ribbon','short'),
+  comp('pebble','PEBBLE','N','calm','Galet','Petite mais solide.','#9a8a7a','#c0b0a0','#5a4a3a','none','short'),
+  comp('shrub','SHRUB','N','gentle','Buisson','Discrète et verdoyante.','#5a8a4a','#8ab87a','#3a6a2a','none','short'),
+  comp('guimauve','GUIMAUVE','SR','kawaii','Guimauve','Un nuage de sucre qui colle aux doigts.','#ffffff','#ffe0ec','#ff8fb1','partyhat','twin'),
+  comp('spaghetti','SPAGHETTI','SR','calm','Pâtes','Grand prêtre des nouilles volantes.','#ffd98a','#fff0c2','#e0a02a','crown','long'),
+  comp('moustache','MOUSTACHE','R','rival','Moustache','Détective privé, il suspecte tout le monde.','#3a3a3a','#6a6a6a','#8a5a3a','glasses','short'),
+  comp('toast','TOAST','R','kawaii','Pain grillé','Une tranche de pain qui a investi en bourse.','#c8905a','#e8c8a0','#6a4a2a','partyhat','short'),
+  comp('flamant','FLAMANT','R','calm','Flamant','Agent immobilier le jour, flamant rose la nuit.','#ff8fb1','#ffc0d8','#c04a6a','none','long'),
+  comp('pipistrelle','PIPISTRELLE','R','witch','Chauve-souris','Chauve-souris experte-comptable.','#4a2a6a','#8a5ac0','#c04a8a','horns','long'),
+  comp('burp','BURP','N','kawaii','Soda','Une canette qui rote des bulles.','#c0c0c0','#e0e0e0','#4a8ad8','antenna','short'),
+  comp('gloup','GLOUP','N','calm','Gélatine','Un flan qui a appris à parler.','#8fe0a0','#c0f0d0','#2fb27a','none','short'),
+  comp('saucisse','SAUCISSE','N','fiery','Saucisse','Une saucisse devenue consciente.','#c0603a','#e8a080','#8a3a20','none','short'),
+  comp('cornichon','CORNICHON','N','rival','Cornichon','Aigre mais loyal.','#6a9a3a','#a8c878','#4a7a2a','none','short'),
+  comp('choucroute','CHOUCROUTE','N','gentle','Choucroute','Fermentée mais adorable.','#e8e0b0','#f8f0d0','#8a7a4a','ribbon','twin'),
+  comp('mousse','MOUSSE','R','gentle','Mousse','Une mousse au chocolat existentielle.','#8a5a3a','#c09070','#6a4a2a','glasses','twin'),
+];
+function activeCompanion(){ return COMPANIONS.find(c=>c.id===S.companion.active) || COMPANIONS[0]; }
+const TRAITS = {
+  eclipse:{quirk:"Invoque des mini-éclipses pour éteindre la lumière",catch:"La lumière me fuit.",bio:"Reine des ténèbres, elle n'apparaît que lorsque le soleil se couche. Son pouvoir fige le temps une seconde — assez pour renverser n'importe quel combat."},
+  nebula:{quirk:"Sème des constellations dans ton sillage",catch:"Les étoiles me murmurent.",bio:"Née d'une supernova, elle a choisi de te suivre à travers les galaxies. Elle lit l'avenir dans les nébuleuses."},
+  aurora:{quirk:"Colore le ciel de vert et de rose",catch:"Regarde, le ciel danse !",bio:"La lumière boréale incarnée, descendue sur terre pour égayer tes nuits. Sa présence réchauffe même les cœurs gelés."},
+  solstice:{quirk:"Rend le jour éternel d'un geste",catch:"Aucune nuit ne me retient.",bio:"Gardienne du plus long jour, sa lame dorée tranche l'ombre elle-même. Elle ne sort que pour les célébrations solaires."},
+  halley:{quirk:"Laisse une traînée de poussière d'étoiles",catch:"On se reverra dans un éon.",bio:"Comète vagabonde, elle ne croise la Terre qu'une fois par génération. Chaque rencontre est un présage de chance."},
+  hatori:{quirk:"Cache un katana dans son ombrelle",catch:"Le temps t'attendra.",bio:"Gérante de l'échoppe d'antiquités, elle fige le temps d'un battement de cil pour protéger ceux qu'elle aime."},
+  kuro:{quirk:"Tire les cartes pour prédire ton prochain tirage",catch:"Les cartes ne mentent jamais.",bio:"Diseuse de bonne aventure au regard perçant, elle tient la Maison de la Sorcière. Elle voit le destin avant qu'il ne se produise."},
+  astrid:{quirk:"Parle aux étoiles filantes",catch:"Écoute le ciel.",bio:"Gardienne des étoiles, elle recueille les vœux des météores. Sa sérénité apaise les tempêtes."},
+  luna:{quirk:"Fait briller la lune dans tes yeux",catch:"La nuit est à nous.",bio:"Prêtresse de la lune, elle veille sur les rêves et chasse les cauchemars. Son aura argentée calme les cœurs."},
+  orion:{quirk:"Décoche des flèches vers les constellations",catch:"Je ne rate jamais ma cible.",bio:"Chasseur d'étoiles, il transforme les météores en flèches. Sa précision est légendaire."},
+  nova:{quirk:"Te tape sur l'épaule quand tu te relâches",catch:"Encore un, champion !",bio:"Coach née, elle sent toujours quand tu es sur le point de battre un record."},
+  vex:{quirk:"Compte tes défaites pour mieux te motiver",catch:"Tu ne me battras jamais.",bio:"Rival invétéré, il se nourrit de la compétition. Te battre est son sport préféré."},
+  yuki:{quirk:"Fait tomber la neige en pleine canicule",catch:"Tout doucement.",bio:"Douce comme la première neige, elle apaise les tensions d'un seul mot."},
+  ember:{quirk:"Rallume ta motivation d'une étincelle",catch:"Fonce, ne réfléchis pas !",bio:"Fougueuse, elle transforme chaque défi en brasier. Impossible de rester immobile avec elle."},
+  rin:{quirk:"Te guide avec la brise",catch:"Le vent te porte.",bio:"Sage et posée, elle souffle les bonnes décisions dans ton oreille."},
+  tori:{quirk:"Fait éclore des fleurs quand elle rit",catch:"Youpi !",bio:"Pétillante, sa joie est contagieuse. Chaque victoire devient une fête."},
+  kiyo:{quirk:"Laisse la rosée sur ton chemin",catch:"Respire, on y va.",bio:"Fraîche et calme, elle rend chaque matin plus léger."},
+  mira:{quirk:"Crée des mirages pour te motiver",catch:"Vois plus loin.",bio:"Douce illusionniste, elle montre à chacun son meilleur soi."},
+  sasha:{quirk:"Raccourcit le trajet d'un éclair",catch:"Déjà arrivée !",bio:"Rapide comme la foudre, elle ne connaît pas le mot attendre."},
+  noa:{quirk:"Calme les torrents d'un geste",catch:"Suis le courant.",bio:"La rivière l'accompagne partout. Sa paix intérieure est un don."},
+  lila:{quirk:"Parfume l'air de lilas",catch:"Ça sent bon la victoire !",bio:"Sucrée et enjouée, elle transforme les corvées en jeu."},
+  ruby:{quirk:"Rougit d'énergie au combat",catch:"Je brille, tu vacilles.",bio:"Éclatante comme un rubis, son feu intérieur est sans fin."},
+  guimauve:{quirk:"Colle littéralement à tes côtés",catch:"On reste ensemble !",bio:"Un nuage de sucre qui ne te lâchera jamais. Littéralement."},
+  spaghetti:{quirk:"Bénit tes tirages avec une nouille sacrée",catch:"Que les nouilles soient avec toi.",bio:"Grand prêtre des nouilles volantes, il bénit chacune de tes tentatives de record."},
+  mochi:{quirk:"Rebondit de joie en permanence",catch:"Trop bien !"},
+  pippi:{quirk:"Saupoudre de sucre tout ce qu'elle touche",catch:"Un peu de douceur ?"},
+  misty:{quirk:"Apparaît et disparaît dans la brume",catch:"Je suis là, t'inquiète."},
+  cocoa:{quirk:"Offre un chocolat chaud imaginaire",catch:"Réchauffe-toi."},
+  daisy:{quirk:"Fait pousser des marguerites sur ton écran",catch:"C'est fleuri par ici !"},
+  nook:{quirk:"Connaît chaque recoin de la forêt",catch:"Par ici, c'est plus court."},
+  bubble:{quirk:"Souffle des bulles qui éclatent en confettis",catch:"Pop !"},
+  clover:{quirk:"Trouve des trèfles à quatre feuilles partout",catch:"La chance est là."},
+  willow:{quirk:"Ses branches te chatouillent pour t'encourager",catch:"Doucement, ça pousse."},
+  skye:{quirk:"Flotte légèrement au-dessus du sol",catch:"La tête dans les nuages !"},
+  peach:{quirk:"Sent la pêche mûre",catch:"Croque la vie !"},
+  mint:{quirk:"Rafraîchit l'air autour d'elle",catch:"Ça pique un peu, c'est bon."},
+  coral:{quirk:"Fait jaillir des petits récifs",catch:"Vif comme un poisson !"},
+  ivy:{quirk:"Grimpe partout, même aux murs",catch:"Accroche-toi !"},
+  poppy:{quirk:"Rougit comme un coquelicot quand on la complimente",catch:"Oh, arrête !"},
+  sunny:{quirk:"Illumine la pièce d'un rayon",catch:"Soleil sur toi !"},
+  moustache:{quirk:"Porte une moustache qu'il réajuste sans cesse",catch:"Élémentaire, mon cher."},
+  toast:{quirk:"Ses prévisions boursières tombent toujours juste",catch:"Investis dans le beurre."},
+  flamant:{quirk:"Dort debout sur une patte",catch:"Équilibre parfait."},
+  pipistrelle:{quirk:"Classe tes factures à l'envers",catch:"Tout est en ordre, à ma façon."},
+  mousse:{quirk:"Ressert une coupe imaginaire de mousse au chocolat",catch:"Une dernière ?"},
+  pepper:{quirk:"Éternue du poivre quand elle s'énerve"},
+  berry:{quirk:"Tâche ses doigts de jus de baie"},
+  twig:{quirk:"Craque doucement quand elle marche"},
+  puddle:{quirk:"Reflète le ciel dans ses flaques"},
+  dusty:{quirk:"Laisse une traînée de poussière dorée"},
+  pixel:{quirk:"Scintille quand elle s'excite"},
+  patch:{quirk:"Raccommode tout ce qui est déchiré"},
+  rusty:{quirk:"Grinche un peu mais chaleureuse"},
+  cobble:{quirk:"Ne bronche jamais, solide comme un roc"},
+  moth:{quirk:"Fonce vers la moindre lumière"},
+  pebble:{quirk:"Tient toujours dans une poche"},
+  shrub:{quirk:"Marmonne aux plantes"},
+  burp:{quirk:"Rote des bulles à chaque émotion"},
+  gloup:{quirk:"Tremblote comme un flan"},
+  saucisse:{quirk:"Se met à danser dès qu'on la cuit"},
+  cornichon:{quirk:"Pique la langue mais reste fidèle"},
+  choucroute:{quirk:"Bulle de fermentation quand elle réfléchit"},
+};
+function traitOf(c){ return TRAITS[c.id] || {quirk:'',catch:'',bio:''}; }
+function companionAvatarSVG(c){
+  const a = c.avatar || COMPANIONS[0].avatar;
+  const star = 'M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z';
+  let hairBack;
+  if(a.hairStyle==='short'){
+    hairBack = `<path d="M80 44 C56 44 42 58 42 78 C42 102 52 116 62 120 C68 123 74 124 80 124 C86 124 92 123 98 120 C108 116 118 102 118 78 C118 58 104 44 80 44 Z" fill="${a.hair}"/>`;
+  } else {
+    hairBack = `<path d="M80 40 C52 40 38 56 38 78 C38 112 50 148 62 158 C68 163 74 166 80 166 C86 166 92 163 98 158 C110 148 122 112 122 78 C122 56 108 40 80 40 Z" fill="${a.hair}"/>`;
+    if(a.hairStyle==='twin') hairBack += `<circle cx="36" cy="100" r="17" fill="${a.hair}"/><circle cx="124" cy="100" r="17" fill="${a.hair}"/>`;
+  }
+  let acc;
+  if(a.acc==='bow') acc = `<g class="bow"><path d="M106 46 L92 38 L94 54 Z" fill="${a.outfit2}"/><path d="M106 46 L120 38 L118 54 Z" fill="${a.outfit2}"/><circle cx="106" cy="46" r="4.2" fill="${a.outfit}"/></g>`;
+  else if(a.acc==='flower') acc = `<g class="bow"><circle cx="108" cy="42" r="3" fill="#fff"/><circle cx="103" cy="47" r="3" fill="#fff"/><circle cx="113" cy="47" r="3" fill="#fff"/><circle cx="104" cy="41" r="3" fill="#fff"/><circle cx="113" cy="41" r="3" fill="#fff"/><circle cx="108" cy="44" r="2.6" fill="${a.eye}"/></g>`;
+  else if(a.acc==='star') acc = `<path class="bow" d="M108 38 L110 45 L117 45 L111 49 L113 56 L108 51 L103 56 L105 49 L99 45 L106 45 Z" fill="${a.outfit2}"/>`;
+  else if(a.acc==='ribbon') acc = `<g class="bow"><rect x="24" y="54" width="8" height="24" rx="3.5" fill="${a.outfit2}"/><rect x="19" y="56" width="7" height="15" rx="3" fill="${a.outfit2}"/><rect x="34" y="56" width="7" height="15" rx="3" fill="${a.outfit2}"/></g>`;
+  else if(a.acc==='hat') acc = `<g class="hat"><path d="M80 8 L112 44 L48 44 Z" fill="${a.outfit2}"/><ellipse cx="80" cy="44" rx="36" ry="9" fill="${a.outfit2}"/><rect x="52" y="40" width="56" height="7" rx="3.5" fill="${a.outfit}"/></g>`;
+  else if(a.acc==='partyhat') acc = `<g class="hat"><path d="M80 8 L110 46 L50 46 Z" fill="${a.outfit2}"/><ellipse cx="80" cy="46" rx="30" ry="8" fill="${a.outfit2}"/><circle cx="80" cy="8" r="4.5" fill="#fff"/><path d="M68 34 L80 18 L92 34" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
+  else if(a.acc==='crown') acc = `<g class="hat"><path d="M58 42 L58 26 L70 36 L80 24 L90 36 L102 26 L102 42 Z" fill="${a.outfit2}"/><rect x="58" y="42" width="44" height="6" rx="2" fill="${a.outfit}"/></g>`;
+  else if(a.acc==='horns') acc = `<g class="bow"><path d="M54 40 C50 24 60 18 66 28 C62 32 58 36 54 40 Z" fill="${a.outfit2}"/><path d="M106 40 C110 24 100 18 94 28 C98 32 102 36 106 40 Z" fill="${a.outfit2}"/></g>`;
+  else if(a.acc==='antenna') acc = `<g class="bow"><line x1="80" y1="34" x2="80" y2="14" stroke="${a.outfit2}" stroke-width="3.5" stroke-linecap="round"/><circle cx="80" cy="12" r="4.5" fill="${a.eye}"/></g>`;
+  else acc = '';
+  let faceAcc = (a.acc==='glasses') ? `<g class="glasses"><circle cx="64" cy="92" r="11.5" fill="rgba(255,255,255,.15)" stroke="#2b2b33" stroke-width="2.5"/><circle cx="96" cy="92" r="11.5" fill="rgba(255,255,255,.15)" stroke="#2b2b33" stroke-width="2.5"/><path d="M75.5 92 L84.5 92" stroke="#2b2b33" stroke-width="2.5"/></g>` : '';
+  return `<svg class="cava mood-${currentMood}" viewBox="0 0 160 200" xmlns="http://www.w3.org/2000/svg">
+  <g class="bodyg">
+    <g class="sparkles">
+      <g transform="translate(28 70)"><path class="sp" d="${star}" fill="${a.outfit2}"/></g>
+      <g transform="translate(134 58)"><path class="sp" d="${star}" fill="${a.eye}"/></g>
+      <g transform="translate(22 128)"><path class="sp" d="${star}" fill="${a.eye}"/></g>
+      <g transform="translate(136 126)"><path class="sp" d="${star}" fill="${a.outfit2}"/></g>
+    </g>
+    ${hairBack}
+    <g class="head">
+      ${acc}
+      <ellipse cx="80" cy="88" rx="36" ry="40" fill="${a.skin}"/>
+      <ellipse cx="46" cy="88" rx="7" ry="9" fill="${a.skin}"/>
+      <ellipse cx="114" cy="88" rx="7" ry="9" fill="${a.skin}"/>
+      <path class="bangs" d="M47 74 C46 48 58 39 80 39 C102 39 114 48 113 74 C108 60 98 57 92 64 C86 54 76 54 70 64 C60 57 52 60 47 74 Z" fill="${a.hair}"/>
+      <path d="M60 60 Q74 54 88 60" stroke="${a.hair2}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <g class="brows">
+        <path d="M56 76 Q64 72 72 75" stroke="${a.brow}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <path d="M88 75 Q96 72 104 76" stroke="${a.brow}" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </g>
+      <g class="eyes">
+        <g class="eye">
+          <ellipse cx="64" cy="92" rx="9" ry="11" fill="#fff"/>
+          <ellipse cx="64" cy="94" rx="6.5" ry="8" fill="${a.eye}"/>
+          <ellipse cx="64" cy="94" rx="3" ry="4.5" fill="${a.pupil}"/>
+          <circle class="hl" cx="61.5" cy="90" r="2.6" fill="#fff"/>
+          <circle class="hl" cx="67" cy="97" r="1.2" fill="#fff" opacity=".9"/>
+          <path d="M55 83 Q64 80 73 84" stroke="${a.brow}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+        <g class="eye">
+          <ellipse cx="96" cy="92" rx="9" ry="11" fill="#fff"/>
+          <ellipse cx="96" cy="94" rx="6.5" ry="8" fill="${a.eye}"/>
+          <ellipse cx="96" cy="94" rx="3" ry="4.5" fill="${a.pupil}"/>
+          <circle class="hl" cx="93.5" cy="90" r="2.6" fill="#fff"/>
+          <circle class="hl" cx="99" cy="97" r="1.2" fill="#fff" opacity=".9"/>
+          <path d="M87 84 Q96 80 105 83" stroke="${a.brow}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>
+      ${faceAcc}
+      <circle cx="80" cy="107" r="1.6" fill="#eab8a8"/>
+      <ellipse class="blush" cx="56" cy="108" rx="8" ry="4.5" fill="${a.blush}"/>
+      <ellipse class="blush" cx="104" cy="108" rx="8" ry="4.5" fill="${a.blush}"/>
+      <g class="mouth">
+        <path class="m-smile" d="M73 120 Q80 127 87 120" stroke="${a.mouth}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path class="m-big" d="M70 118 Q80 132 90 118 Z" fill="${a.mouth}"/>
+        <ellipse class="m-o" cx="80" cy="122" rx="5" ry="6" fill="${a.mouth}"/>
+        <path class="m-smirk" d="M73 120 Q80 126 88 116" stroke="${a.mouth}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path class="m-flat" d="M73 124 Q80 119 87 124" stroke="${a.mouth}" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      </g>
+    </g>
+    <rect x="72" y="126" width="16" height="16" rx="7" fill="${a.skin}"/>
+    <path d="M34 200 C34 170 46 154 60 148 L72 144 L88 144 L100 148 C114 154 126 170 126 200 Z" fill="${a.outfit}"/>
+    <path d="M70 148 L80 158 L90 148" stroke="${a.outfit2}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>`;
+}
+let currentMood = 'neutre';
+let moodTimer = null;
+function applyMood(mood){
+  document.querySelectorAll('.cava').forEach(el=>{
+    el.classList.remove('mood-neutre','mood-content','mood-excite','mood-taquine','mood-decu');
+    el.classList.add('mood-'+mood);
+  });
+}
+function setMood(mood){
+  currentMood = mood;
+  applyMood(mood);
+  clearTimeout(moodTimer);
+  if(mood!=='neutre') moodTimer = setTimeout(()=>{ applyMood('neutre'); currentMood='neutre'; }, 7000);
+}
+function moodFor(event, extra){
+  switch(event){
+    case 'pull': {
+      const best = [...extra.results].sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];
+      if(best.rarity==='SSR'||best.rarity==='EX') return 'excite';
+      if(best.rarity==='SR') return 'content';
+      return 'decu';
+    }
+    case 'record': return 'excite';
+    case 'levelup': return 'excite';
+    case 'welcome': return 'content';
+    case 'goal': return 'content';
+    case 'affection': return 'excite';
+    case 'nudge': return 'taquine';
+    case 'chat': return 'content';
+    default: return 'neutre';
+  }
+}
+function companionDailyCount(){
+  const c = S.companion;
+  if(!c.daily || c.daily.date !== today()) c.daily = {date:today(), plays:0, pulls:0, records:0};
+  return c.daily;
+}
+function goalProgress(goal){
+  if(goal.type==='missions') return MISSIONS.filter(m=>m.period==='daily' && missionValue(m)>=m.target).length;
+  return companionDailyCount()[goal.type] || 0;
+}
+function companionContext(){
+  const me = getRivals().find(b=>b.me);
+  const nextBot = getRivals().filter(b=>!b.me && b.xp>S.seasonXP).pop();
+  const ssrIn = Math.max(0, 90 - S.pity.sinceSSR);
+  const parts = [
+    `Level ${S.level}, ${fmt(S.coins)} coins, ${fmt(S.gems)} gems, ${S.energy.value} energy.`,
+    `Login streak ${S.login.streak} days, rank #${me.rank} (${t(tierFor(me.rank))}).`,
+    `Pity: SSR guaranteed in ${ssrIn} pulls (SR since ${S.pity.sinceSR}).`,
+    `${ownedCount()}/${GAMES.length} mascots owned.`,
+  ];
+  if(nextBot) parts.push(`Rival just ahead: ${nextBot.name} at ${nextBot.xp-S.seasonXP} pts.`);
+  return parts.join(' ');
+}
+function buildPrompt(event, extra){
+  switch(event){
+    case 'pull': {
+      const best = [...extra.results].sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];
+      if(best.kind==='companion'){ const c=COMPANIONS.find(x=>x.id===best.id); return `The player just pulled a companion: ${c.name} (${t('rarity.'+best.rarity)}). React with emotion!`; }
+      const m = mascotOf(best.id);
+      return `The player just pulled. Best result: ${m.mascot} (${t('rarity.'+best.rarity)}, ${m.emoji}). React with emotion and push them to continue.`;
+    }
+    case 'record': return `The player just beat their record on ${extra.g.title} (${extra.g.emoji}). React.`;
+    case 'levelup': return `The player just reached level ${extra.level}. React.`;
+    case 'welcome': return `The player is logging in (day #${extra.day}). Welcome them.`;
+    case 'goal': return `Propose the daily goal: « ${extra.goalText} ».`;
+    case 'affection': return `You give a gift: ${extra.reward}. Thank and reward warmly.`;
+    case 'nudge': return extra.text;
+    case 'chat': return extra.text;
+    default: return 'Say something short and in character.';
+  }
+}
+function cannedReact(event, extra){
+  switch(event){
+    case 'pull': {
+      const best = [...extra.results].sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity))[0];
+      if(best.kind==='companion'){ const c=COMPANIONS.find(x=>x.id===best.id); return best.rarity==='EX' ? t('comp.ex', {name:c.name}) : t('comp.new', {name:c.name, r:best.rarity}); }
+      const m = mascotOf(best.id);
+      if(best.rarity==='SSR') return t('comp.react.ssr', {name:m.mascot});
+      if(best.rarity==='SR') return t('comp.react.sr', {name:m.mascot});
+      return t('comp.react.low', {name:m.mascot});
+    }
+    case 'record': return t('comp.react.record', {game:extra.g.title});
+    case 'levelup': return t('comp.react.levelup', {level:extra.level});
+    case 'welcome': return t('comp.react.welcome', {day:extra.day});
+    case 'goal': return t('comp.react.goal', {goal:extra.goalText});
+    case 'affection': return t('comp.react.affection', {reward:extra.reward});
+    case 'nudge': return extra.text;
+    case 'chat': return t('comp.react.offline');
+    default: return '…';
+  }
+}
+async function companionAsk(event, extra){
+  if(!COMPANION.enabled) return null;
+  if(aiEngine()==='webllm') return await webllmAsk(event, extra);
+  const sys = companionPersona()
+    + '\n\nPlayer state: ' + companionContext()
+    + '\n\nAnswer in one short sentence, no quotes or tags.';
+  const messages = [{role:'system', content:sys}];
+  const hist = companionHistory.slice(-8);
+  for(const m of hist) messages.push({role: m.role==='user'?'user':'assistant', content: m.content});
+  messages.push({role:'user', content:buildPrompt(event, extra)});
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), COMPANION.timeoutMs);
+  try{
+    const r = await fetch(COMPANION.endpoint, {
+      method:'POST', headers:{'Content-Type':'application/json'}, signal:ctrl.signal,
+      body: JSON.stringify({model:COMPANION.model, stream:false, messages,
+        options:{num_predict:COMPANION.num_predict, temperature:COMPANION.temperature}}),
+    });
+    if(!r.ok) return null;
+    const data = await r.json();
+    return (data && data.message && data.message.content) ? String(data.message.content).trim() : null;
+  }catch(e){ return null; }
+  finally{ clearTimeout(t); }
+}
+function aiEngine(){ try{ return localStorage.getItem('gacha.engine') || COMPANION.engine; }catch(e){ return COMPANION.engine; } }
+function setAiEngine(e){ try{ localStorage.setItem('gacha.engine', e); }catch(_){ } }
+let webllmEngine=null, webllmReady=false;
+async function ensureWebLLM(){
+  if(webllmReady) return webllmEngine;
+  const webllm = await import('https://esm.run/@mlc-ai/web-llm');
+  webllmEngine = await webllm.CreateMLCEngine(COMPANION.webllmModel, {
+    initProgressCallback: p => {
+      const pct = (p && typeof p.progress==='number') ? Math.round(p.progress*100) : 0;
+      const t = $('#ctyping'); if(t) t.textContent = 'Chargement du modèle… '+pct+'%';
+    }
+  });
+  webllmReady = true;
+  const t = $('#ctyping'); if(t) t.textContent = '…';
+  return webllmEngine;
+}
+async function webllmAsk(event, extra){
+  try{
+    const eng = await ensureWebLLM();
+    const sys = companionPersona()
+      + '\n\nPlayer state: ' + companionContext()
+      + '\n\nAnswer in one short sentence, no quotes or tags.';
+    const messages = [{role:'system', content:sys}];
+    for(const m of companionHistory.slice(-8)) messages.push({role: m.role==='user'?'user':'assistant', content: m.content});
+    messages.push({role:'user', content:buildPrompt(event, extra)});
+    const reply = await eng.chat.completions.create({
+      messages, temperature: COMPANION.temperature, max_tokens: COMPANION.num_predict,
+    });
+    return (reply && reply.choices && reply.choices[0] && reply.choices[0].message && reply.choices[0].message.content)
+      ? String(reply.choices[0].message.content).trim() : null;
+  }catch(e){ return null; }
+}
+function setOffline(off){
+  offlineMode = off;
+  const st = $('#cstatus'); if(st) st.classList.toggle('off', off);
+}
+function setTyping(on){
+  const t = $('#ctyping'); if(t) t.classList.toggle('on', on);
+  document.querySelectorAll('.cava').forEach(el=>el.classList.toggle('talking', on));
+}
+function showBubble(text){
+  const b = $('#cbubble'); if(!b) return;
+  b.innerHTML = escapeHtml(text); b.classList.add('visible');
+  clearTimeout(bubbleTimer); bubbleTimer = setTimeout(()=>b.classList.remove('visible'), 9000);
+}
+function companionPush(role, content){
+  companionHistory.push({role, content});
+  if(companionHistory.length > COMPANION.historyMax) companionHistory.shift();
+  LS.setJSON('gacha.companion.history', companionHistory);
+  refreshCompanionPanels();
+}
+function renderCompanionHistory(){
+  return companionHistory.map(m=>`<div class="m ${m.role==='user'?'you':'comp'}">${escapeHtml(m.content)}</div>`).join('')
+    || `<div class="muted" style="font-size:12px">${t('comp.noChat')}</div>`;
+}
+function refreshCompanionPanels(){
+  ['#cmsgs','#cmsgs_view'].forEach(sel=>{ const el=$(sel); if(el){ el.innerHTML=renderCompanionHistory(); el.scrollTop=el.scrollHeight; } });
+}
+async function companionReact(event, extra){
+  if(document.hidden) return;
+  setTyping(true);
+  const text = await companionAsk(event, extra);
+  setTyping(false);
+  const final = text ? text : cannedReact(event, extra);
+  setOffline(!text);
+  setMood(moodFor(event, extra));
+  showBubble(final);
+}
+function grantAffection(amount){
+  const c = S.companion;
+  const before = c.affection;
+  c.affection = Math.min(100, c.affection + amount);
+  save();
+  for(const th of [20,40,60,80,100]){
+    if(before < th && c.affection >= th){
+      const r = AFFECTION_MILESTONES[th];
+      const rewardTxt = (r.coins?'+'+r.coins+' 🪙 ':'')+(r.gems?'+'+r.gems+' 💎':'');
+      if(r.coins) addCoins(r.coins);
+      if(r.gems) addGems(r.gems);
+      toast(t('toast.aff', {t:th}) + ' ' + rewardTxt);
+      companionReact('affection', {reward: rewardTxt});
+    }
+  }
+  save();
+  ['#caff','#caff_view'].forEach(sel=>{ const el=$(sel); if(el) el.style.width=c.affection+'%'; });
+  ['#caffn','#caffn_view'].forEach(sel=>{ const el=$(sel); if(el) el.textContent=c.affection+'/100'; });
+}
+function pickDailyGoal(){
+  const c = S.companion;
+  if(!c.dailyGoal || c.dailyGoal.date !== today()){
+    const sorted = [...DAILY_GOALS].sort((a,b)=> (goalProgress(a)/a.target) - (goalProgress(b)/b.target));
+    const g = sorted[0];
+    c.dailyGoal = {date:today(), id:g.id, label:t(g.label), type:g.type, target:g.target, reward:g.reward, claimed:false};
+    save();
+    companionReact('goal', {goalText: t(g.label)});
+  }
+  return c.dailyGoal;
+}
+function claimDailyGoal(){
+  const g = pickDailyGoal();
+  if(g.claimed){ toast(t('toast.freeDone')); return; }
+  const prog = goalProgress(g);
+  if(prog < g.target){ toast(t('toast.goalProgress', {a:Math.min(prog,g.target), b:g.target})); return; }
+  g.claimed = true;
+  const rewardTxt = (g.reward.coins?'+'+g.reward.coins+' 🪙':'')+(g.reward.gems?'+'+g.reward.gems+' 💎':'');
+  if(g.reward.coins) addCoins(g.reward.coins);
+  if(g.reward.gems) addGems(g.reward.gems);
+  grantAffection(5);
+  toast(t('toast.goalDone') + ' ' + rewardTxt);
+  save(); render();
+}
+function pickNudge(){
+  const me = getRivals().find(b=>b.me);
+  const nextBot = getRivals().filter(b=>!b.me && b.xp>S.seasonXP).pop();
+  const ssrIn = Math.max(0, 90 - S.pity.sinceSSR);
+  const opts = [];
+  if(ssrIn>0 && ssrIn<=5) opts.push(t('nudge.pity', {n:ssrIn}));
+  if(nextBot && (nextBot.xp - S.seasonXP) <= 120) opts.push(t('nudge.rival', {name:nextBot.name, pts:nextBot.xp-S.seasonXP}));
+  if(S.energy.value < 40) opts.push(t('nudge.energy'));
+  if(opts.length===0) return null;
+  return opts[Math.floor(Math.random()*opts.length)];
+}
+async function companionNudge(){
+  if(document.hidden) return;
+  const now = Date.now();
+  if(now - (S.companion.lastNudge||0) < COMPANION.idleMs) return;
+  const nudge = pickNudge();
+  if(!nudge) return;
+  S.companion.lastNudge = now; save();
+  companionReact('nudge', {text:nudge});
+}
+async function sendCompanionChat(){
+  let text='';
+  const fi=$('#cinput'), vi=$('#cinput_view');
+  if(vi && vi.value && vi.value.trim()) text=vi.value.trim();
+  else if(fi && fi.value && fi.value.trim()) text=fi.value.trim();
+  if(!text) return;
+  if(fi) fi.value=''; if(vi) vi.value='';
+  companionPush('user', text);
+  if(S.companion.lastChatAff !== today()){ S.companion.lastChatAff = today(); grantAffection(1); }
+  setTyping(true);
+  const reply = await companionAsk('chat', {text});
+  setTyping(false);
+  const final = reply ? reply : cannedReact('chat', {text});
+  setOffline(!reply);
+  companionPush('assistant', final);
+  showBubble(final);
+}
+
+/* ----- Vue Compagnon ----- */
+function viewCompanion(){
+  const act = activeCompanion();
+  const tr = traitOf(act);
+  const c = S.companion;
+  const goal = pickDailyGoal();
+  const prog = goalProgress(goal);
+  const done = prog >= goal.target;
+  const rewardTxt = (goal.reward.coins?'+'+goal.reward.coins+' 🪙':'')+(goal.reward.gems?'+'+goal.reward.gems+' 💎':'');
+  const roster = COMPANIONS.map(cp=>{
+    const owned = !!S.companion.owned[cp.id];
+    const isActive = cp.id===act.id;
+    if(!owned) return `<div class="mascot locked"><div class="em">🔒</div><div class="nm ${cp.rarity}">???</div><div class="stars">${cp.rarity}</div>${cp.rarity==='EX'?`<div class="inf">${t('comp.exclusive')}</div>`:''}</div>`;
+    return `<div class="mascot r${cp.rarity}" style="cursor:pointer" onclick="selectCompanion('${cp.id}')">
+      <div class="em" style="width:56px;height:64px;margin:0 auto">${companionAvatarSVG(cp)}</div>
+      <div class="nm ${cp.rarity}">${cp.name}</div>
+      <div class="stars">${'★'.repeat(cp.rarity==='EX'?4:cp.rarity==='SSR'?3:cp.rarity==='SR'?2:1)}</div>
+      ${isActive?`<span class="badge green">${t('comp.active')}</span>`:`<button style="margin-top:5px;font-size:11px;padding:5px 9px;pointer-events:none">${t('comp.select')}</button>`}
+    </div>`;
+  }).join('');
+  const html = `
+  <div class="grid">
+    <div class="panel r${act.rarity}">
+      <div class="row" style="margin-bottom:8px">
+        <div style="width:80px;height:88px;flex:0 0 auto">${companionAvatarSVG(act)}</div>
+        <div>
+          <h2 style="margin:0">${escapeHtml(act.name)}</h2>
+          <div style="margin-top:4px"><span class="badge r${act.rarity}">${act.rarity}</span> <span class="badge" style="background:var(--card2);color:var(--dim)">${escapeHtml(act.element)}</span></div>
+          <div class="muted" style="margin-top:4px">${escapeHtml(act.desc)}</div>
+          <div class="hint" style="margin-top:4px">✨ ${escapeHtml(tr.quirk||'')}</div>
+          ${tr.catch?`<div class="hint">💬 « ${escapeHtml(tr.catch)} »</div>`:''}
+          ${tr.bio?`<div class="hint">📜 ${escapeHtml(tr.bio)}</div>`:''}
+          <div class="muted" style="margin-top:4px">${t('comp.model')} · ${escapeHtml(COMPANION.model)}</div>
+        </div>
+        <div class="chip" style="margin-left:auto"><span class="ico">${offlineMode?'🔴':'🟢'}</span> ${offlineMode?t('comp.offline'):t('comp.online')}</div>
+      </div>
+      <div class="muted" style="margin-bottom:4px">${t('comp.affection')}</div>
+      <div class="affbar"><i id="caff_view" style="width:${c.affection}%"></i></div>
+      <div class="muted" style="margin-top:4px">❤️ <span id="caffn_view">${c.affection}/100</span> — ${t('comp.affHint')}</div>
+      <div class="row" style="margin-top:10px">
+        <span class="muted">${t('comp.engine')}</span>
+        <button class="${aiEngine()==='ollama'?'primary':'ghost'}" style="padding:6px 10px;font-size:12px" onclick="setAiEngine('ollama');render()">Ollama</button>
+        <button class="${aiEngine()==='webllm'?'primary':'ghost'}" style="padding:6px 10px;font-size:12px" onclick="setAiEngine('webllm');render()">WebLLM</button>
+        <span class="muted" id="llmstatus"></span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>👥 ${t('comp.roster')}</h2>
+      <div class="mascots">${roster}</div>
+    </div>
+
+    <div class="panel">
+      <h2>🎯 ${t('comp.goal')}</h2>
+      <p class="muted">${escapeHtml(goal.label)} — ${Math.min(prog,goal.target)}/${goal.target}</p>
+      <div class="bar"><i style="width:${Math.min(100, prog/goal.target*100)}%"></i></div>
+      ${goal.claimed
+        ? `<span class="badge green" style="margin-top:8px">${t('missions.ok')}</span>`
+        : (done ? `<button class="primary" style="margin-top:8px" onclick="claimDailyGoal()">${t('missions.claim')} ${rewardTxt}</button>`
+                : `<p class="hint" style="margin-top:8px">${t('comp.reward', {t:rewardTxt})}</p>`)}
+    </div>
+
+    <div class="panel">
+      <h2>💬 ${t('comp.discuss')}</h2>
+      <div class="msgs" id="cmsgs_view" style="max-height:260px">${renderCompanionHistory()}</div>
+      <div class="inputrow" style="margin-top:8px">
+        <input id="cinput_view" placeholder="${t('comp.placeholder')}" maxlength="200" onkeydown="if(event.key==='Enter')sendCompanionChat()" />
+        <button class="primary" onclick="sendCompanionChat()">➤</button>
+      </div>
+    </div>
+  </div>`;
+  $('#view').innerHTML = html;
+}
+
+function selectCompanion(id){
+  if(!S.companion.owned[id]) return;
+  S.companion.active = id; save();
+  const c = activeCompanion();
+  $('#cavatar .cava-host').innerHTML = companionAvatarSVG(c);
+  $('#cchat_avatar').innerHTML = companionAvatarSVG(c);
+  $('#cchat_name').textContent = c.name;
+  toast(t('comp.selected', {name:c.name}));
+  render();
+  companionReact('welcome', {day:S.login.streak||1});
+}
+
+/* ----- Init UI compagnon ----- */
+function initCompanion(){
+  const c = activeCompanion();
+  $('#cavatar .cava-host').innerHTML = companionAvatarSVG(c);
+  $('#cchat_avatar').innerHTML = companionAvatarSVG(c);
+  $('#cchat_name').textContent = c.name;
+  $('#cchat_mood').textContent = t('comp.mood');
+  $('#cinput').placeholder = t('comp.placeholder');
+  $('#cavatar').addEventListener('click', ()=> $('#cchat').classList.toggle('open'));
+  $('#cchat_close').addEventListener('click', ()=> $('#cchat').classList.remove('open'));
+  $('#csend').addEventListener('click', sendCompanionChat);
+  refreshCompanionPanels();
+  setOffline(false);
+}
+
+/* ============================================================
+   VUES
+   ============================================================ */
+const NAV = [
+  {id:'home',   icon:'home',    label:'tab.home'},
+  {id:'games',  icon:'gamepad', label:'tab.games'},
+  {id:'gacha',  icon:'sparkle', label:'tab.gacha'},
+  {id:'collect',icon:'box',     label:'tab.collect'},
+  {id:'shop',   icon:'bag',     label:'tab.shop'},
+];
+const SUB_VIEWS = ['missions','pass','rank','profile','companion'];
+let currentView='home';
+
+function renderNav(){
+  const items = NAV.map(v=>{
+    const active = v.id===currentView || (SUB_VIEWS.includes(currentView) && v.id==='home');
+    return `<div class="navitem${active?' active':''}" data-view="${v.id}">${icon(v.icon,23)} <span>${t(v.label)}</span></div>`;
+  }).join('');
+  $('#nav').innerHTML = `<div class="navinner">${items}</div>`;
+  $('#nav').querySelectorAll('.navitem').forEach(el=>el.addEventListener('click',()=>{ currentView=el.dataset.view; render(); }));
+}
+function switchView(v){ currentView=v; render(); }
+
+function renderTopbar(){
+  $('#lvico').innerHTML=icon('star',16);
+  $('#ptsico').innerHTML=icon('target',16);
+  $('#coinsico').innerHTML=icon('coins',16);
+  $('#gemsico').innerHTML=icon('gems',16);
+  $('#energyico').innerHTML=icon('bolt',16);
+  $('#gearico').innerHTML=ic('sliders',15);
+  $('#lv').textContent=S.level;
+  $('#pts').textContent=fmt(S.xp);
+  $('#coins').textContent=fmt(S.coins);
+  $('#gems').textContent=fmt(S.gems);
+  $('#energy').textContent=S.energy.value;
+  $('#energyfill').style.width=(S.energy.value/ENERGY_MAX*100)+'%';
+  $('#energytime').textContent=fmtDur(energyCountdown());
+  const feat = mascotOf(S.banner.game);
+  $('#eventico').innerHTML = ic('clock',14);
+  $('#eventtxt').innerHTML = `<b>${t('event')}</b> ${t('event.rate', {name:feat.mascot})}`;
+  $('#eventcd').textContent = t('event.ends') + ' ' + fmtDur(S.banner.until - Date.now());
+}
+
+/* ----- Accueil ----- */
+function viewHome(){
+  const xpForNext=xpNeed(S.level), xpIn=S.xp, pct=Math.min(100,Math.round(xpIn/xpForNext*100));
+  const me=getRivals().find(b=>b.me);
+  const nextBot = getRivals().filter(b=>!b.me && b.xp>S.seasonXP).pop();
+  const gap = nextBot ? nextBot.xp-S.seasonXP : 0;
+  const boost = boostMult()>1;
+  let html=`
+  <div class="grid">
+    <div class="panel">
+      <div class="player-card frame-${S.cosmetics.frame}" style="margin-bottom:10px">
+        <div style="font-size:36px">${AVATARS[S.profile.avatar]}</div>
+        <div>
+          <h2 style="margin:0">${escapeHtml(S.profile.name)} ${S.cosmetics.title?`<span class="badge" style="background:var(--accent);color:var(--accent-ink)">${t('title.'+S.cosmetics.title)}</span>`:''}</h2>
+          <div class="muted">${t('home.level')} ${S.level} · ${ownedCount()}/${GAMES.length} ${t('home.mascots')}</div>
+        </div>
+      </div>
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="muted" style="margin-top:4px">${t('home.points')} ${fmt(xpIn)} / ${fmt(xpForNext)} ${t('home.next',{l:S.level+1})}${boost?` · <b class="gold">${t('home.boost',{x:2})}</b>`:''}</div>
+      <div class="row" style="margin-top:12px">
+        <div class="chip"><span class="ico">${ic('flame',14)}</span> ${t('home.streak')} <b>${S.login.streak} j</b></div>
+        <div class="chip"><span class="ico">${ic('trophy',14)}</span> ${t('home.rank')} <b>#${me.rank}</b> (${t(tierFor(me.rank))})</div>
+      </div>
+      <p class="hint" style="margin-top:12px">${gap>0?t('home.rival',{rank:nextBot.rank,name:nextBot.name,pts:fmt(gap)}):t('home.top')}</p>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('bolt',16)} ${t('home.energy')}</h2>
+      <div class="row">
+        <span class="chip">${S.energy.value}/${ENERGY_MAX}</span>
+        <span class="countdown">${fmtDur(energyCountdown())}</span>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="gem" onclick="refillEnergy()">${ic('refresh',14)} ${t('home.refill')}</button>
+        <button onclick="fakeAd()" id="adbtn">${ic('tv',14)} ${t('home.ad')}</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('check',16)} ${t('home.missionsToday')}</h2>
+      <div class="missions-list">${MISSIONS.filter(m=>m.period==='daily').slice(0,3).map(missionRow).join('')}</div>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('rocket',16)} ${t('home.quick')}</h2>
+      <div class="subnav">
+        ${[['missions','check','tab.missions'],['pass','ticket','tab.pass'],['rank','trophy','tab.rank'],['profile','user','tab.profile'],['companion','heart','tab.companion']].map(([id,ico,lab])=>`<button onclick="switchView('${id}')">${icon(ico,16)} ${t(lab)}</button>`).join('')}
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="primary" onclick="switchView('games')">${ic('gamepad',14)} ${t('home.play')}</button>
+        <button onclick="switchView('gacha')">${ic('sparkle',14)} ${t('home.pull')}</button>
+        <button class="gold" onclick="showGemModal()">${ic('gems',14)} ${t('shop.premium')}</button>
+      </div>
+    </div>
+  </div>`;
+  $('#view').innerHTML=html;
+  companionNudge();
+}
+
+/* ----- Jeux ----- */
+function viewGames(){
+  const html=`<div class="games">`+GAMES.map(g=>{
+    const r=ratingOf(g), b=readBest(g.id);
+    return `<div class="gtile" onclick="playGame('${g.id}')">
+      <div class="glyph ${g.rarity}">${ic(g.id,40)}</div>
+      <div class="nm">${g.title}</div>
+      <div class="rt">${b==null?'—':(g.dir==='low'?t('games.best')+' '+b:fmt(b))}</div>
+      <div class="rt gold">${Math.round(r)} ${t('games.points')}</div>
+    </div>`;
+  }).join('')+`</div>
+  <p class="hint" style="margin-top:10px">${t('games.hint', {cost:ENERGY_COST})}</p>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Gacha ----- */
+function viewGacha(){
+  const feat=mascotOf(S.banner.game);
+  const featComp = featuredCompanion();
+  const exComp = activeEventCompanion();
+  let html=`
+  <div class="grid">
+    <div class="panel r${feat.rarity}">
+      <h2>${ic('sparkle',16)} ${t('gacha.banner')}</h2>
+      <div class="row">
+        <div style="width:56px;height:56px;display:flex;align-items:center;justify-content:center;color:var(--rSSR)">${ic(feat.id,52)}</div>
+        <div><b>${feat.mascot}</b> <span class="badge r${feat.rarity}">${feat.rarity}</span>
+          <div class="muted">${t('gacha.rateup')}</div>
+          <div class="countdown" id="bannercd">${fmtDur(S.banner.until-Date.now())}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('sparkle',16)} ${t('gacha.pullTitle')}</h2>
+      <div class="row">
+        <button class="primary" onclick="doPull(1,false)">×1 — 150 ${ic('coins',14)}</button>
+        <button class="gem" onclick="doPull(1,true)">×1 — 15 ${ic('gems',14)}</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="primary" onclick="doPull(10,false)">×10 — 1350 ${ic('coins',14)} (SR+)</button>
+        <button class="gem" onclick="doPull(10,true)">×10 — 135 ${ic('gems',14)}</button>
+      </div>
+      <p class="hint" style="margin-top:10px">
+        ${t('gacha.pity')}<br>
+        <span class="gold">${t('gacha.ssrIn', {n:Math.max(0,90-S.pity.sinceSSR)})}</span> · <span class="muted">${t('gacha.srSince', {n:S.pity.sinceSR})}</span>
+      </p>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('target',16)} ${t('gacha.rates')}</h2>
+      <table class="rates">
+        <tr><th>${t('gacha.rates')}</th><th>%</th><th>${t('gacha.dupe')}</th></tr>
+        <tr class="N"><td>N · ${t('rarity.N')}</td><td>60%</td><td>1 ${t('collect.shards')}</td></tr>
+        <tr class="R"><td>R · ${t('rarity.R')}</td><td>28%</td><td>3 ${t('collect.shards')}</td></tr>
+        <tr class="SR"><td>SR · ${t('rarity.SR')}</td><td>9%</td><td>8 ${t('collect.shards')}</td></tr>
+        <tr class="SSR"><td>SSR · ${t('rarity.SSR')}</td><td>3%</td><td>25 ${t('collect.shards')}</td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">${t('gacha.dupeHint')}</p>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('user',16)} ${t('gacha.compTitle')}</h2>
+      <div class="row">
+        <div style="width:56px;height:64px;flex:0 0 auto">${companionAvatarSVG(featComp)}</div>
+        <div><b>${featComp.name}</b> <span class="badge r${featComp.rarity}">${featComp.rarity}</span>
+          <div class="muted">${t('gacha.compRateup')}</div></div>
+      </div>
+      <table class="rates" style="margin-top:10px">
+        <tr><th>${t('rarity.N')}</th><td>60%</td></tr>
+        <tr><th>${t('rarity.R')}</th><td>30%</td></tr>
+        <tr><th>${t('rarity.SR')}</th><td>8%</td></tr>
+        <tr><th>${t('rarity.SSR')}</th><td>2%</td></tr>
+      </table>
+      <p class="hint" style="margin-top:8px">${t('gacha.compPity')}</p>
+    </div>
+
+    <div class="panel rEX">
+      <h2>${ic('sparkle',16)} ${t('gacha.eventTitle')}</h2>
+      <div class="row">
+        <div style="width:56px;height:64px;flex:0 0 auto">${companionAvatarSVG(exComp)}</div>
+        <div><b>${exComp.name}</b> <span class="badge rEX">EX</span>
+          <div class="muted">${t('gacha.eventRateup')}</div>
+          <div class="countdown" id="eventcd">${fmtDur(eventUntil()-Date.now())}</div></div>
+      </div>
+      <p class="hint" style="margin-top:8px">${t('gacha.eventPity', {n:Math.max(0,100-(S.pity.ex||0))})}</p>
+    </div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Collection ----- */
+function viewCollect(){
+  const html=`<div class="panel" style="margin-bottom:10px"><h2>${ic('box',16)} ${t('collect.title')} — ${ownedCount()}/${GAMES.length}</h2>
+    <div class="bar"><i style="width:${ownedCount()/GAMES.length*100}%"></i></div></div>
+    <div class="mascots">`+GAMES.map(g=>{
+      const c=S.collection[g.id];
+      if(!c) return `<div class="mascot locked"><div class="glyph">${ic(g.id,40)}</div><div class="nm">???</div><div class="inf">${t('collect.discover')}</div></div>`;
+      const m=mascotOf(g.id);
+      const cost=(c.stars+1)*8;
+      return `<div class="mascot r${g.rarity}">
+        <div class="glyph ${g.rarity}">${ic(g.id,44)}</div>
+        <div class="nm ${g.rarity}">${m.mascot}</div>
+        <div class="stars">${'★'.repeat(c.stars)}${'☆'.repeat(5-c.stars)}</div>
+        <div class="inf">${t('collect.x',{c:c.count})} · ${c.shards} ${t('collect.shards')}</div>
+        <div class="inf">${c.stars>=5?t('collect.max'):t('collect.ascend',{s:c.stars+1})+': '+c.shards+'/'+cost+' '+t('collect.shards')}</div>
+        ${c.stars<5?`<button style="margin-top:6px;font-size:11px;padding:6px 9px" onclick="ascend('${g.id}')">${ic('up',12)} ${t('collect.up')}</button>`:''}
+      </div>`;
+    }).join('')+`</div>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Missions ----- */
+function missionRow(m){
+  const val=missionValue(m); const done=val>=m.target; const st=S.missions[m.id];
+  const claimed = st && st.claimed;
+  const r=m.reward;
+  const rewardTxt=(r.coins?'+'+r.coins+'🪙 ':'')+(r.gems?'+'+r.gems+'💎 ':'')+(r.xp?'+'+r.xp+' PTS':'');
+  return `<div class="mission">
+    <div><b>${t(m.desc)}</b><div class="prog">${Math.min(val,m.target)}/${m.target} · ${rewardTxt}</div></div>
+    ${claimed?`<span class="badge green">${t('missions.ok')}</span>`:(done?`<button class="claim primary" onclick="claimMission('${m.id}')">${t('missions.claim')}</button>`:'<span class="prog">…</span>')}
+  </div>`;
+}
+function claimMission(id){
+  const m=MISSIONS.find(x=>x.id===id); if(!m) return;
+  const st=S.missions[id];
+  if(!st || st.claimed || missionValue(m)<m.target) return;
+  st.claimed=true;
+  const r=m.reward; if(r.coins) addCoins(r.coins); if(r.gems) addGems(r.gems); if(r.xp) addPts(r.xp);
+  toast(t('missions.done')+' '+(r.coins?'+'+r.coins+'🪙 ':'')+(r.gems?'+'+r.gems+'💎 ':'')+(r.xp?'+'+r.xp+' PTS':''));
+  save(); render();
+}
+function viewMissions(){
+  const daily=MISSIONS.filter(m=>m.period==='daily');
+  const weekly=MISSIONS.filter(m=>m.period==='weekly');
+  const html=`<div class="grid">
+    <div class="panel"><h2>${ic('check',16)} ${t('missions.daily')}</h2><div class="missions-list">${daily.map(missionRow).join('')}</div></div>
+    <div class="panel"><h2>${ic('clock',16)} ${t('missions.weekly')}</h2><div class="missions-list">${weekly.map(missionRow).join('')}</div></div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Battle pass ----- */
+function viewPass(){
+  const tiers='<div class="missions-list">'+Array.from({length:BP_TIERS},(_,i)=>{
+    const n=i+1, th=bpThreshold(n), claimed=S.bp.claimed.includes(n), reachable=S.seasonXP>=th;
+    const f=bpFreeReward(n); const p=bpPremiumReward(n);
+    return `<div class="mission">
+      <div><b>${t('pass.tier')} ${n}</b><div class="prog">${th} PTS · +${f.coins}🪙 ${S.bp.premium?'· +'+p.gems+'💎':''}</div></div>
+      ${claimed?`<span class="badge green">${t('missions.ok')}</span>`:reachable?`<button class="claim primary" onclick="claimBPTier(${n})">${t('missions.claim')}</button>`:`<span class="prog">${Math.min(S.seasonXP,th)}/${th}</span>`}
+    </div>`;
+  }).join('')+'</div>';
+  const html=`<div class="grid">
+    <div class="panel">
+      <h2>${ic('ticket',16)} ${t('pass.title')} — ${S.weekly}</h2>
+      <p class="muted">${t('pass.seasonPts')} : <b class="gold">${fmt(S.seasonXP)}</b> · ${S.bp.premium?`<span class="green">${t('pass.premiumActive')}</span>`:t('pass.free')}</p>
+      ${S.bp.premium?'':`<button class="gem" onclick="buyPremiumPass()">${ic('gems',14)} ${t('pass.activate')}</button>`}
+    </div>
+    <div class="panel"><h2>${t('pass.tiers')}</h2>${tiers}</div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Boutique ----- */
+function viewShop(){
+  const seed=offerSeed();
+  const rng=mulberry32(seed*7919+1);
+  const offerGems = 50 + Math.floor(rng()*50);
+  const offerCoins = Math.round(offerGems*16);
+  const offerUntil = (seed+1)*2*3600000;
+  const html=`<div class="grid">
+    <div class="panel rSSR">
+      <h2>${ic('gems',16)} ${t('shop.premium')}</h2>
+      <p class="muted">${t('shop.premiumNote')}</p>
+      <div class="seg col">
+        ${[[100,'0,99 €',1],[550,'4,99 €',0],[1200,'9,99 €',0],[3000,'19,99 €',1]].map(([g,p,best])=>`<button class="${best?'gold':''}" onclick="buyGems(${g})"><span>${g} 💎</span><span>${p}</span></button>`).join('')}
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('rocket',16)} ${t('shop.boost')}</h2>
+      <p class="muted">${t('shop.boostDesc')}</p>
+      <button class="gem" onclick="buyBoost()">${ic('gems',14)} ${t('shop.buy')} (30)</button>
+    </div>
+
+    <div class="panel">
+      <h2>${ic('user',16)} ${t('shop.cosmetics')}</h2>
+      <div class="row">
+        <button class="gem" onclick="buyFrame('neon',100)">${ic('gems',14)} ${t('frame.neon')} (100)</button>
+        <button class="gold" onclick="showGemModal()">${ic('gems',14)} ${t('modal.energy.buy')}</button>
+      </div>
+    </div>
+
+    <div class="panel"><h2>${ic('heart',16)} ${t('shop.freePack')}</h2>
+      <p class="muted">${t('shop.freeDesc')}</p>
+      <button class="primary" onclick="claimDailyFree()">${t('shop.claim')}</button></div>
+
+    <div class="panel"><h2>${ic('bolt',16)} ${t('shop.energy')}</h2>
+      <div class="row">
+        <button class="gem" onclick="refillEnergy()">${ic('refresh',14)} ${t('shop.full')}</button>
+        <button onclick="fakeAd()">${ic('tv',14)} ${t('shop.ad')}</button>
+      </div></div>
+
+    <div class="panel"><h2>${ic('coins',16)} ${t('shop.exchange')}</h2>
+      <div class="row">
+        <button class="gem" onclick="buyCoinPack(50,600)">50 ${ic('gems',12)} → 600 ${ic('coins',12)}</button>
+        <button class="gem" onclick="buyCoinPack(120,1600)">120 ${ic('gems',12)} → 1600 ${ic('coins',12)}</button>
+      </div></div>
+
+    <div class="panel rSSR">
+      <h2>${ic('flame',16)} ${t('shop.flash')}</h2>
+      <p>${offerGems} 💎 → <b>${fmt(offerCoins)} 🪙</b> <span class="badge red">-50%</span></p>
+      <p class="countdown" id="offercd">${t('shop.flashExp',{t:fmtDur(offerUntil-Date.now())})}</p>
+      <button class="primary" onclick="buyCoinPack(${offerGems},${offerCoins})">${t('shop.buy')}</button>
+    </div>
+
+    <div class="panel"><h2>${ic('crown',16)} ${t('shop.vip')}</h2>
+      <p class="muted">${t('shop.vipDesc', {n:vipLevel(), spent:fmt(S.stats.gemsSpentTotal), next:(vipLevel()+1)*200-S.stats.gemsSpentTotal})}</p></div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+
+/* ----- Classement ----- */
+function viewRank(){
+  const rivals=getRivals();
+  const me=rivals.find(b=>b.me);
+  const tier=tierFor(me.rank);
+  const top=rivals.slice(0,30);
+  const lb=top.map(b=>{
+    const tc=tierFor(b.rank);
+    return `<div class="lbrow${b.me?' me':''}">
+      <div class="rank">#${b.rank}</div>
+      <div>${AVATARS[b.avatar]}</div>
+      <div>${escapeHtml(b.name)}${b.me?' (toi)':''} <span class="muted">· ${t(tc)}</span></div>
+      <div class="xp">${fmt(b.xp)}</div>
+    </div>`;
+  }).join('');
+  const html=`<div class="grid">
+    <div class="panel"><h2>${ic('trophy',16)} ${t('rank.season')} ${S.weekly}</h2>
+      <div class="row">
+        <span class="badge" style="background:${tierColor(tier)};color:#000">${t(tier)}</span>
+        <span>${t('rank.rank')} <b>#${me.rank}</b> / ${rivals.length}</span>
+        <span class="gold">${fmt(S.seasonXP)} PTS</span>
+      </div>
+      <p class="hint" style="margin-top:8px">${t('rank.resetHint')}</p></div>
+    <div class="panel"><h2>${t('rank.top30')}</h2><div class="lb">${lb}</div></div>
+    <div class="panel"><h2>${ic('sliders',16)} ${t('rank.debug')}</h2>
+      <div class="row">
+        <button class="ghost" onclick="resetSeason()">${t('rank.resetSeason')}</button>
+        <button class="ghost" onclick="resetAll()">${t('rank.resetAll')}</button>
+      </div></div>
+  </div>`;
+  $('#view').innerHTML=html;
+}
+function resetSeason(){ S.seasonXP=0; S.weekly=''; S.bp={season:'',premium:false,claimed:[]}; save(); location.reload(); }
+function resetAll(){ if(confirm(t('rank.resetAll')+' ?')){ LS.set('gacha.state',null); LS.set('gacha.bestCache',null); location.reload(); } }
+
+/* ---------- Render principal ---------- */
+function render(){
+  syncEnergy();
+  syncCosmetics();
+  renderTopbar();
+  renderNav();
+  const fn={home:viewHome,games:viewGames,gacha:viewGacha,collect:viewCollect,missions:viewMissions,pass:viewPass,shop:viewShop,rank:viewRank,profile:viewProfile,companion:viewCompanion}[currentView];
+  fn();
+  ['bannercd','offercd','eventcd'].forEach(id=>{ const el=$('#'+id); if(el) setTimeout(render,1000); });
+}
+
+/* ---------- Init ---------- */
+function init(){
+  applyLang();
+  applyTheme();
+  if(!S.bestCache) initBestCache();
+  const needLogin = syncCalendar();
+  syncCosmetics();
+  render();
+  initCompanion();
+  setTimeout(companionNudge, 1500);
+  if(needLogin) showLoginModal();
+  window.addEventListener('focus', rescan);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) rescan(); });
+  window.addEventListener('storage', e=>{ if(e.key && e.key.endsWith('.best')) rescan(); });
+  setInterval(()=>{ if(!document.hidden){ syncEnergy(); renderTopbar(); } }, 1000);
+}
+init();
+</script>
+</body>
+</html>

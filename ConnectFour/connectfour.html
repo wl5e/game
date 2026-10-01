@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Connect Four</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(120% 80% at 50% 0%, #123a6a 0%, #040a14 65%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: #cbd5e1;
+    padding: 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .wrap {
+    width: min(88vw, 380px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    letter-spacing: .16em;
+    color: #64748b;
+  }
+  .hud b {
+    color: #4ade80;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    margin-left: 6px;
+    text-shadow: 0 0 14px rgba(74, 222, 128, .45);
+  }
+
+  .board {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 7 / 6;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b1220;
+    box-shadow:
+      0 0 0 1px #1e293b,
+      0 0 0 6px rgba(15, 23, 42, .55),
+      0 30px 60px -25px #000;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+  }
+
+  .pause-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, .72);
+    color: #cbd5e1;
+    font-size: 12px;
+    letter-spacing: 0;
+    cursor: pointer;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    z-index: 90;
+  }
+  .pause-btn.show { display: flex; }
+  .pause-btn:hover { background: rgba(30, 41, 59, .8); }
+
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 24px;
+    background: rgba(5, 9, 16, .82);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .overlay h1 {
+    margin: 0;
+    font-size: clamp(26px, 8vw, 40px);
+    letter-spacing: .22em;
+    color: #e2e8f0;
+    text-shadow: 0 0 26px rgba(74, 222, 128, .35);
+  }
+  .overlay p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #94a3b8;
+    letter-spacing: .06em;
+    max-width: 30ch;
+  }
+
+  button {
+    margin-top: 4px;
+    padding: 12px 30px;
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: .18em;
+    color: #04210f;
+    background: linear-gradient(180deg, #86efac, #4ade80);
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 8px 24px -8px rgba(74, 222, 128, .8);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 12px 28px -8px rgba(74, 222, 128, .9); }
+  button:active { transform: translateY(1px) scale(.98); }
+
+  .hint {
+    margin: 0;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: #475569;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="hud">
+    <div>SCORE<b id="score">0</b></div>
+    <div>BEST<b id="best">0</b></div>
+  </div>
+
+  <div class="board">
+    <canvas id="game"></canvas>
+    <button class="pause-btn" id="pauseBtn" aria-label="Pause">❚❚</button>
+    <div class="overlay show" id="overlay">
+      <h1 id="ovTitle">CONNECT FOUR</h1>
+      <p id="ovText">Drop your discs to line up four in a row. Click a column — the CPU will try to stop you.</p>
+      <button id="ovBtn">PLAY</button>
+      <button id="ovBtn2" style="display:none">RESTART</button>
+    </div>
+  </div>
+
+  <p class="hint">CLICK A COLUMN &nbsp;·&nbsp; KEYS 1–7 &nbsp;·&nbsp; SPACE PAUSE &nbsp;·&nbsp; R RESTART</p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ---------- Setup ---------- */
+  const COLS = 7;
+  const ROWS = 6;
+  const CELL = 60;
+  const W = COLS * CELL;   // 420
+  const H = ROWS * CELL;   // 360
+  const RAD = CELL * 0.42;
+
+  const HUMAN = 'P';
+  const CPU   = 'C';
+
+  const canvas  = document.getElementById('game');
+  const ctx     = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const ovTitle = document.getElementById('ovTitle');
+  const ovText  = document.getElementById('ovText');
+  const ovBtn   = document.getElementById('ovBtn');
+  const ovBtn2  = document.getElementById('ovBtn2');
+  const pauseBtn = document.getElementById('pauseBtn');
+  const scoreEl = document.getElementById('score');
+  const bestEl  = document.getElementById('best');
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+
+  /* ---------- State ---------- */
+  let grid;           // flat array COLS*ROWS: '' | 'P' | 'C'
+  let humanTurn;      // true when the human may move
+  let wins = 0, losses = 0, draws = 0;
+  let streak = 0;
+  let winCells = null; // winning disc indices for highlight
+  let hoverCol = -1;
+  let state = 'idle';  // 'idle' | 'playing' | 'paused' | 'over'
+  let cpuTimer = null;
+  let cpuPending = false;
+
+  let best = 0;
+  try { best = parseInt(localStorage.getItem('connectfour.best') || '0', 10) || 0; } catch (e) {}
+  bestEl.textContent = best;
+
+  /* ---------- Helpers ---------- */
+  function cx(c) { return (c + 0.5) * CELL; }
+  function cy(r) { return (r + 0.5) * CELL; }
+
+  function updateHud() {
+    scoreEl.textContent = wins;
+    bestEl.textContent = best;
+  }
+
+  function showOverlay(title, text, btnLabel, btn2Label) {
+    ovTitle.textContent = title;
+    ovText.textContent = text;
+    ovBtn.textContent = btnLabel;
+    if (btn2Label) { ovBtn2.textContent = btn2Label; ovBtn2.style.display = ''; }
+    else { ovBtn2.style.display = 'none'; }
+    overlay.classList.add('show');
+  }
+
+  function hideOverlay() {
+    overlay.classList.remove('show');
+  }
+
+  function updatePauseBtn() { pauseBtn.classList.toggle('show', state === 'playing'); }
+
+  /* ---------- Game logic ---------- */
+  function dropDisc(col, p) {
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[col + r * COLS] === '') {
+        grid[col + r * COLS] = p;
+        return r;
+      }
+    }
+    return -1;
+  }
+
+  function lowestRow(col) {
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (grid[col + r * COLS] === '') return r;
+    }
+    return -1;
+  }
+
+  function findWinCells(col, row, p) {
+    const dirs = [[1,0], [0,1], [1,1], [1,-1]];
+    for (const [dx, dy] of dirs) {
+      const cells = [[col, row]];
+      for (let s = 1; s < 4; s++) {
+        const c = col + dx * s, r = row + dy * s;
+        if (c < 0 || c >= COLS || r < 0 || r >= ROWS || grid[c + r * COLS] !== p) break;
+        cells.push([c, r]);
+      }
+      for (let s = 1; s < 4; s++) {
+        const c = col - dx * s, r = row - dy * s;
+        if (c < 0 || c >= COLS || r < 0 || r >= ROWS || grid[c + r * COLS] !== p) break;
+        cells.unshift([c, r]);
+      }
+      if (cells.length >= 4) return cells.slice(0, 4).map(([c, r]) => c + r * COLS);
+    }
+    return null;
+  }
+
+  function wouldWin(col, p) {
+    const r = dropDisc(col, p);
+    if (r === -1) return false;
+    const win = findWinCells(col, r, p) !== null;
+    grid[col + r * COLS] = '';
+    return win;
+  }
+
+  function cpuMove() {
+    const valid = [];
+    for (let c = 0; c < COLS; c++) {
+      if (grid[c] === '') valid.push(c); // top cell empty => column not full
+    }
+    if (valid.length === 0) return -1;
+
+    // 1. Take an immediate win.
+    for (const c of valid) if (wouldWin(c, CPU)) return c;
+    // 2. Block the human's immediate win.
+    for (const c of valid) if (wouldWin(c, HUMAN)) return c;
+    // 3. Near-random, biased toward the center columns.
+    const weights = [1, 2, 3, 4, 3, 2, 1];
+    let total = 0;
+    for (const c of valid) total += weights[c];
+    let r = Math.random() * total;
+    for (const c of valid) {
+      r -= weights[c];
+      if (r < 0) return c;
+    }
+    return valid[valid.length - 1];
+  }
+
+  function finish(result) {
+    state = 'over';
+    updatePauseBtn();
+    if (result === 'win') {
+      wins++;
+      streak++;
+      if (streak > best) {
+        best = streak;
+        try { localStorage.setItem('connectfour.best', String(best)); } catch (e) {}
+      }
+    } else if (result === 'loss') {
+      losses++;
+      streak = 0;
+    } else {
+      draws++;
+      streak = 0;
+    }
+    updateHud();
+    const title = result === 'win' ? 'YOU WIN' : result === 'loss' ? 'YOU LOSE' : 'DRAW';
+    showOverlay(title, `Wins ${wins} · Losses ${losses} · Draws ${draws}. Best streak: ${best}.`, 'PLAY AGAIN');
+  }
+
+  function scheduleCpu() {
+    cpuPending = true;
+    cpuTimer = setTimeout(() => {
+      cpuTimer = null;
+      if (state !== 'playing') return;
+      cpuPending = false;
+      const col = cpuMove();
+      if (col === -1) { finish('draw'); return; }
+      const row = dropDisc(col, CPU);
+      humanTurn = true;
+      draw();
+      const wc = findWinCells(col, row, CPU);
+      if (wc) { winCells = wc; draw(); finish('loss'); return; }
+      if (grid.every(v => v !== '')) { finish('draw'); return; }
+    }, 420);
+  }
+
+  function humanMove(col) {
+    if (state !== 'playing' || !humanTurn) return;
+    if (col < 0 || col >= COLS || grid[col] !== '') return;
+    const row = dropDisc(col, HUMAN);
+    draw();
+    const wc = findWinCells(col, row, HUMAN);
+    if (wc) { winCells = wc; draw(); finish('win'); return; }
+    if (grid.every(v => v !== '')) { finish('draw'); return; }
+    humanTurn = false;
+    scheduleCpu();
+  }
+
+  function reset() {
+    grid = Array(COLS * ROWS).fill('');
+    humanTurn = true;
+    winCells = null;
+    hoverCol = -1;
+    cpuPending = false;
+    if (cpuTimer) { clearTimeout(cpuTimer); cpuTimer = null; }
+    draw();
+    updateHud();
+  }
+
+  function start() {
+    reset();
+    state = 'playing';
+    hideOverlay();
+    updatePauseBtn();
+  }
+
+  function togglePause() {
+    if (state === 'playing') {
+      state = 'paused';
+      if (cpuTimer) { clearTimeout(cpuTimer); cpuTimer = null; }
+      showOverlay('PAUSED', 'The board is frozen. Press space or hit resume.', 'RESUME', 'RESTART');
+    } else if (state === 'paused') {
+      state = 'playing';
+      hideOverlay();
+      if (cpuPending && !humanTurn) scheduleCpu();
+    }
+    updatePauseBtn();
+  }
+
+  /* ---------- Rendering ---------- */
+  function drawDisc(c, r, p) {
+    const x = cx(c), y = cy(r);
+    ctx.save();
+    if (p === HUMAN) {
+      ctx.fillStyle = '#4ade80';
+      ctx.shadowColor = 'rgba(74, 222, 128, .6)';
+    } else {
+      ctx.fillStyle = '#ff4d6d';
+      ctx.shadowColor = 'rgba(255, 77, 109, .55)';
+    }
+    ctx.shadowBlur = 12;
+    ctx.beginPath();
+    ctx.arc(x, y, RAD, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, .16)';
+    ctx.beginPath();
+    ctx.arc(x - RAD * 0.3, y - RAD * 0.35, RAD * 0.32, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    ctx.fillStyle = '#0b1220';
+    ctx.fillRect(0, 0, W, H);
+
+    // Empty holes
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        ctx.beginPath();
+        ctx.arc(cx(c), cy(r), RAD, 0, Math.PI * 2);
+        ctx.fillStyle = '#081020';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 255, 255, .05)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // Hover preview
+    if (state === 'playing' && humanTurn && hoverCol >= 0 && hoverCol < COLS) {
+      const land = lowestRow(hoverCol);
+      if (land !== -1) {
+        ctx.globalAlpha = 0.32;
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.arc(cx(hoverCol), cy(land), RAD, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // Discs
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        const p = grid[c + r * COLS];
+        if (p) drawDisc(c, r, p);
+      }
+    }
+
+    // Win highlight
+    if (winCells) {
+      for (const idx of winCells) {
+        const c = idx % COLS;
+        const r = (idx / COLS) | 0;
+        ctx.beginPath();
+        ctx.arc(cx(c), cy(r), RAD + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 255, 255, .85)';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+    }
+  }
+
+  /* ---------- Input ---------- */
+  function colFromX(clientX) {
+    const rect = canvas.getBoundingClientRect();
+    const x = (clientX - rect.left) / rect.width * W;
+    return Math.floor(x / CELL);
+  }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    const col = colFromX(e.clientX);
+    if (col >= 0 && col < COLS) humanMove(col);
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    const col = colFromX(e.clientX);
+    const c = (col >= 0 && col < COLS) ? col : -1;
+    if (c !== hoverCol) { hoverCol = c; draw(); }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    if (hoverCol !== -1) { hoverCol = -1; draw(); }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const k = e.key;
+
+    if (k === ' ' || k === 'Spacebar') e.preventDefault();
+
+    if (k === 'r' || k === 'R') { start(); return; }
+
+    if (k === ' ' || k === 'Spacebar' || k === 'p' || k === 'P') {
+      if (state === 'playing' || state === 'paused') togglePause();
+      else start();
+      return;
+    }
+
+    if (k >= '1' && k <= '7') {
+      if (state === 'idle' || state === 'over') start();
+      humanMove(parseInt(k, 10) - 1);
+    }
+  });
+
+  ovBtn.addEventListener('click', () => {
+    ovBtn.blur();
+    if (state === 'paused') togglePause();
+    else start();
+  });
+
+  ovBtn2.addEventListener('click', () => {
+    ovBtn2.blur();
+    start();
+  });
+
+  pauseBtn.addEventListener('click', () => {
+    pauseBtn.blur();
+    if (state === 'playing') togglePause();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && state === 'playing') togglePause();
+  });
+
+  /* ---------- Boot ---------- */
+  reset();
+  state = 'idle';
+  updatePauseBtn();
+})();
+</script>
+<style>
+.sound-btn{position:fixed;top:12px;left:12px;width:38px;height:38px;border:1px solid #1e293b;border-radius:10px;background:rgba(15,23,42,.72);color:#cbd5e1;font-size:16px;line-height:1;cursor:pointer;z-index:99;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.sound-btn:hover{background:rgba(30,41,59,.8)}
+</style>
+<button class="sound-btn" id="soundBtn" aria-label="Toggle sound">♪</button>
+<script>
+(function () {
+  "use strict";
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, master = null, musicGain = null, noiseBuf = null;
+  var muted = false, musicOn = false, timer = null, step = 0, nextT = 0;
+
+  var LEAD = [1244.48,1046.48,932.31,830.59,698.44,830.59,932.31,1046.48,1244.48,1396.88,1244.48,1046.48,932.31,830.59,698.44,0];
+  var BASS = [174.61,261.62,174.61,0,174.61,261.62,174.61,0,174.61,261.62,174.61,0,174.61,261.62,174.61,0];
+  var STEP = 0.13;
+
+  try { muted = localStorage.getItem('arcade.muted') === '1'; } catch (e) {}
+
+  function ensureCtx() {
+    if (!ctx) {
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.6;
+      master.connect(ctx.destination);
+      musicGain = ctx.createGain();
+      musicGain.gain.value = 0.5;
+      musicGain.connect(master);
+      var n = Math.floor(ctx.sampleRate * 0.04);
+      noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for (var i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+  }
+
+  function note(freq, t, dur, type, vol) {
+    if (!freq) return;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type;
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(musicGain);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  function hat(t) {
+    var s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+    var g = ctx.createGain(); g.gain.value = 0.05;
+    s.connect(hp); hp.connect(g); g.connect(musicGain);
+    s.start(t);
+  }
+
+  function schedule(i, t) {
+    var k = i % LEAD.length;
+    note(LEAD[k], t, STEP * 0.9, 'sawtooth', 0.16);
+    note(BASS[k], t, STEP * 0.95, 'sine', 0.2);
+    hat(t);
+  }
+
+  function tick() {
+    while (nextT < ctx.currentTime + 0.12) {
+      schedule(step, nextT);
+      step++;
+      nextT += STEP;
+    }
+  }
+
+  function startMusic() {
+    if (musicOn) return;
+    ensureCtx();
+    musicOn = true;
+    nextT = ctx.currentTime + 0.05;
+    step = 0;
+    timer = setInterval(tick, 25);
+  }
+
+  function stopMusic() {
+    if (timer) { clearInterval(timer); timer = null; }
+    musicOn = false;
+    step = 0;
+  }
+
+  function setMuted(m) {
+    muted = m;
+    try { localStorage.setItem('arcade.muted', m ? '1' : '0'); } catch (e) {}
+    if (master) master.gain.setTargetAtTime(m ? 0 : 0.6, ctx.currentTime, 0.02);
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = m ? '🔇' : '♪';
+  }
+
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    if (pb && pb.classList.contains('show')) { if (!musicOn) startMusic(); }
+    else if (musicOn) stopMusic();
+  }
+
+  function wire() {
+    var sb = document.getElementById('soundBtn');
+    if (sb) sb.addEventListener('click', function () { ensureCtx(); setMuted(!muted); });
+    window.addEventListener('pointerdown', ensureCtx);
+    window.addEventListener('keydown', ensureCtx);
+    var pb = document.getElementById('pauseBtn');
+    if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+    var b = document.getElementById('soundBtn');
+    if (b) b.textContent = muted ? '🔇' : '♪';
+    sync();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+<button class="rules-btn" id="rulesBtn">RULES</button>
+<div class="rules-panel" id="rulesPanel">
+  <div class="rules-card">
+    <h2>HOW TO PLAY</h2>
+    <p id="rulesText"></p>
+    <button id="rulesClose">BACK</button>
+  </div>
+</div>
+<style>
+.rules-btn{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:10px 22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;letter-spacing:.18em;color:#cbd5e1;background:rgba(15,23,42,.85);border:1px solid #334155;border-radius:999px;cursor:pointer;display:none;z-index:60}
+.rules-btn.show{display:block}
+.rules-btn:hover{background:rgba(30,41,59,.9)}
+.rules-panel{position:fixed;inset:0;background:rgba(5,9,16,.94);display:none;align-items:center;justify-content:center;padding:20px;z-index:200;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.rules-panel.show{display:flex}
+.rules-card{width:min(88vw,440px);max-height:80vh;overflow:auto;background:#0b1220;border:1px solid #1e293b;border-radius:16px;padding:24px;box-shadow:0 30px 60px -25px #000;text-align:center}
+.rules-card h2{margin:0 0 14px;font-size:14px;letter-spacing:.24em;color:#4ade80}
+.rules-card p{margin:0 0 20px;font-size:13px;line-height:1.9;color:#cbd5e1;letter-spacing:.03em;text-align:left}
+.rules-card button{margin:0;padding:10px 26px;font:inherit;font-size:13px;letter-spacing:.18em;color:#04210f;background:linear-gradient(180deg,#86efac,#4ade80);border:0;border-radius:999px;cursor:pointer;box-shadow:0 8px 24px -8px rgba(74,222,128,.8)}
+</style>
+<script>
+(function () {
+  "use strict";
+  var RULES = "Drop your discs into the columns by clicking them (you go first). Get 4 of your discs in a row - horizontally, vertically, or diagonally - before the computer does.";
+  var btn = document.getElementById('rulesBtn');
+  var panel = document.getElementById('rulesPanel');
+  var text = document.getElementById('rulesText');
+  var close = document.getElementById('rulesClose');
+  if (text) text.textContent = RULES;
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      e.preventDefault();
+      if (panel && panel.classList.contains('show')) { panel.classList.remove('show'); return; }
+      try { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'p', bubbles: true, cancelable: true })); } catch (err) {}
+    }
+  });
+  function sync() {
+    var pb = document.getElementById('pauseBtn');
+    var title = document.getElementById('ovTitle');
+    var paused = pb && !pb.classList.contains('show') && title && /PAUSED/i.test(title.textContent || '');
+    if (btn) btn.classList.toggle('show', !!paused);
+    var ov = document.getElementById('overlay');
+    if (ov && !ov.classList.contains('show') && panel) panel.classList.remove('show');
+  }
+  var pb = document.getElementById('pauseBtn');
+  if (pb) new MutationObserver(sync).observe(pb, { attributes: true, attributeFilter: ['class'] });
+  var ov = document.getElementById('overlay');
+  if (ov) new MutationObserver(sync).observe(ov, { attributes: true, attributeFilter: ['class'] });
+  if (btn) btn.addEventListener('click', function () { if (panel) panel.classList.add('show'); });
+  if (close) close.addEventListener('click', function () { if (panel) panel.classList.remove('show'); });
+  if (panel) panel.addEventListener('click', function (e) { if (e.target === panel) panel.classList.remove('show'); });
+  sync();
+})();
+</script>
+<style>
+#score{display:inline-block}
+#score.pulse{animation:scorePulse .45s ease}
+@keyframes scorePulse{
+  0%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+  40%{transform:scale(1.4);text-shadow:0 0 26px rgba(74,222,128,.95)}
+  100%{transform:scale(1);text-shadow:0 0 14px rgba(74,222,128,.45)}
+}
+</style>
+<script>
+(function () {
+  "use strict";
+  var el = document.getElementById('score');
+  if (!el) return;
+  var last = parseInt(el.textContent, 10) || 0;
+  var mo = new MutationObserver(function () {
+    var cur = parseInt(el.textContent, 10) || 0;
+    if (cur > last) {
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+    }
+    last = cur;
+  });
+  mo.observe(el, { childList: true, characterData: true, subtree: true });
+})();
+</script>
+</body>
+</html>

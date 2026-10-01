@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>15 Puzzle</title>
+<style>
+  *{box-sizing:border-box;} html,body{height:100%;}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#4a2a0a 0%,#120a02 65%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#f5e6c8;padding:16px;-webkit-tap-highlight-color:transparent;}
+  .wrap{width:min(88vw,440px);display:flex;flex-direction:column;gap:12px;}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.16em;color:#a8916a;}
+  .hud b{color:#f0b429;font-size:20px;font-weight:700;letter-spacing:.02em;margin-left:6px;}
+  .hud button{background:transparent;border:1px solid #5a4a2a;color:#f0b429;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:14px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;background:#1a1208;border-radius:16px;padding:10px;
+    box-shadow:0 0 0 1px #3a2a10,0 30px 60px -25px #000;}
+  .tile{aspect-ratio:1/1;display:grid;place-items:center;font-size:26px;font-weight:800;color:#f5e6c8;border-radius:12px;
+    background:linear-gradient(160deg,#3a2a1a,#1a1208);border:1px solid #5a4a2a;cursor:pointer;user-select:none;}
+  .tile:active{transform:scale(.95);}
+  .tile.empty{background:transparent;border:1px dashed #2a2012;cursor:default;}
+  button.big{font-family:inherit;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;letter-spacing:.05em;
+    background:#f0b429;color:#2a1a02;cursor:pointer;}
+  .won{color:#f0b429;text-align:center;font-weight:700;font-size:14px;letter-spacing:.05em;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>MOVES <b id="moves">0</b></span><span>BEST <b id="best">—</b></span><button id="mbtn" onclick="toggleMusic()">🔊</button></div>
+  <div class="grid" id="board"></div>
+  <div class="won" id="won"></div>
+  <button class="big" id="reset">🔀 Mélanger</button>
+</div>
+<script>
+"use strict";
+const NOTE={C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,C6:1046.5};
+const MELODY=['C4','E4','G4','A4','G4','E4','D4','C4']; const BPM=80;
+let actx=null,musTimer=null,musOn=false;
+function beep(f,t,d){const o=actx.createOscillator(),g=actx.createGain();o.type='square';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.05,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d);}
+function startMusic(){if(musOn)return;musOn=true;if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();const step=60/BPM;let i=0;musTimer=setInterval(()=>{beep(NOTE[MELODY[i%MELODY.length]],actx.currentTime+.02,step*.8);i++;},step*1000);}
+function stopMusic(){musOn=false;clearInterval(musTimer);musTimer=null;}
+function toggleMusic(){if(musOn)stopMusic();else startMusic();const b=document.getElementById('mbtn');if(b)b.textContent=musOn?'🔊':'🔇';}
+document.addEventListener('pointerdown',function first(){startMusic();document.removeEventListener('pointerdown',first);});
+const SIZE=4, N=SIZE*SIZE;
+let board, empty, moves, solved;
+let best=0; try{ best=parseInt(localStorage.getItem('15puzzle.best')||'0',10)||0; }catch(e){}
+const $=s=>document.querySelector(s);
+function neighbors(i){ const r0=Math.floor(i/SIZE), c0=i%SIZE, out=[]; [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{ const r=r0+dr,c=c0+dc; if(r>=0&&r<SIZE&&c>=0&&c<SIZE) out.push(r*SIZE+c); }); return out; }
+function isSolved(){ for(let i=0;i<N-1;i++) if(board[i]!==i+1) return false; return true; }
+function render(){
+  $('#board').innerHTML='';
+  for(let i=0;i<N;i++){
+    const d=document.createElement('div');
+    d.className='tile'+(board[i]===0?' empty':'');
+    d.textContent=board[i]||'';
+    if(board[i]!==0) d.onclick=()=>move(i);
+    $('#board').appendChild(d);
+  }
+  $('#moves').textContent=moves;
+  $('#best').textContent=best?best:'—';
+}
+function move(i){
+  if(solved || !neighbors(i).includes(empty)) return;
+  board[empty]=board[i]; board[i]=0; empty=i; moves++;
+  render();
+  if(isSolved()){
+    solved=true; $('#won').textContent='✨ Résolu en '+moves+' coups !';
+    if(!best || moves<best){ best=moves; try{ localStorage.setItem('15puzzle.best',String(best)); }catch(e){} }
+    $('#best').textContent=best;
+  }
+}
+function shuffle(){
+  board=Array.from({length:N},(_,i)=>i); empty=N-1; moves=0; solved=false; $('#won').textContent='';
+  for(let k=0;k<1000;k++){ const opts=neighbors(empty); const i=opts[Math.floor(Math.random()*opts.length)]; board[empty]=board[i]; board[i]=0; empty=i; }
+  render();
+}
+$('#reset').onclick=shuffle;
+shuffle();
+</script>
+</body>
+</html>

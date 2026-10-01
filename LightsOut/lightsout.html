@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Lights Out</title>
+<style>
+  *{box-sizing:border-box;} html,body{height:100%;}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#0a2a4a 0%,#05080f 65%);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#c8e6f5;padding:16px;-webkit-tap-highlight-color:transparent;}
+  .wrap{width:min(88vw,440px);display:flex;flex-direction:column;gap:12px;}
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;letter-spacing:.16em;color:#6a9ab0;}
+  .hud b{color:#22d3ee;font-size:20px;font-weight:700;letter-spacing:.02em;margin-left:6px;}
+  .hud button{background:transparent;border:1px solid #1a3a4a;color:#22d3ee;border-radius:10px;padding:6px 10px;cursor:pointer;font-size:14px;}
+  .grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#081420;border-radius:16px;padding:10px;
+    box-shadow:0 0 0 1px #123a4a,0 30px 60px -25px #000;}
+  .cell{aspect-ratio:1/1;border-radius:10px;border:1px solid #1a3a4a;cursor:pointer;transition:background .12s,box-shadow .12s;}
+  .cell.on{background:#22d3ee;box-shadow:0 0 18px rgba(34,211,238,.7);}
+  .cell.off{background:#12202e;}
+  button.big{font-family:inherit;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:700;letter-spacing:.05em;
+    background:#22d3ee;color:#04222a;cursor:pointer;}
+  .won{color:#a7f3d0;text-align:center;font-weight:700;font-size:14px;letter-spacing:.05em;min-height:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>MOVES <b id="moves">0</b></span><span>BEST <b id="best">—</b></span><button id="mbtn" onclick="toggleMusic()">🔊</button></div>
+  <div class="grid" id="board"></div>
+  <div class="won" id="won"></div>
+  <button class="big" id="reset">💡 Nouveau</button>
+</div>
+<script>
+"use strict";
+const NOTE={C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,B4:493.88,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880,C6:1046.5};
+const MELODY=['A4','C5','E5','D5','C5','A4']; const BPM=120;
+let actx=null,musTimer=null,musOn=false;
+function beep(f,t,d){const o=actx.createOscillator(),g=actx.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.06,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d);}
+function startMusic(){if(musOn)return;musOn=true;if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();const step=60/BPM;let i=0;musTimer=setInterval(()=>{beep(NOTE[MELODY[i%MELODY.length]],actx.currentTime+.02,step*.8);i++;},step*1000);}
+function stopMusic(){musOn=false;clearInterval(musTimer);musTimer=null;}
+function toggleMusic(){if(musOn)stopMusic();else startMusic();const b=document.getElementById('mbtn');if(b)b.textContent=musOn?'🔊':'🔇';}
+document.addEventListener('pointerdown',function first(){startMusic();document.removeEventListener('pointerdown',first);});
+const SIZE=5, N=SIZE*SIZE;
+let board, moves, won;
+let best=0; try{ best=parseInt(localStorage.getItem('lightsout.best')||'0',10)||0; }catch(e){}
+const $=s=>document.querySelector(s);
+function render(){
+  $('#board').innerHTML='';
+  for(let i=0;i<N;i++){
+    const d=document.createElement('div');
+    d.className='cell '+(board[i]?'on':'off');
+    d.onclick=()=>press(i);
+    $('#board').appendChild(d);
+  }
+  $('#moves').textContent=moves;
+  $('#best').textContent=best?best:'—';
+}
+function press(i){
+  if(won) return;
+  const r=Math.floor(i/SIZE), c=i%SIZE;
+  [[0,0],[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{ const rr=r+dr,cc=c+dc; if(rr>=0&&rr<SIZE&&cc>=0&&cc<SIZE) board[rr*SIZE+cc]^=1; });
+  moves++; render();
+  if(board.every(v=>v===0)){
+    won=true; $('#won').textContent='💡 Éteint en '+moves+' coups !';
+    if(!best || moves<best){ best=moves; try{ localStorage.setItem('lightsout.best',String(best)); }catch(e){} }
+    $('#best').textContent=best;
+  }
+}
+function newGame(){
+  board=Array(SIZE*SIZE).fill(0); moves=0; won=false; $('#won').textContent='';
+  for(let k=0;k<8;k++) press(Math.floor(Math.random()*N));
+  moves=0; won=false; $('#won').textContent=''; render();
+}
+$('#reset').onclick=newGame;
+newGame();
+</script>
+</body>
+</html>
