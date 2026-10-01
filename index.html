@@ -1089,6 +1089,7 @@ function playGame(id){
   if(S.energy.value < ENERGY_COST){ showEnergyModal(); return; }
   S.energy.value -= ENERGY_COST; S.energy.at = Date.now();
   S.stats.plays++; companionDailyCount().plays++; addPts(5); track('play',1); syncCosmetics(); save(); render();
+  companionReact('play', {g});
   const url = g.folder+'/'+g.file;
   const w = window.open(url, '_blank');
   if(!w) toast(t('toast.popup'));
@@ -1411,9 +1412,10 @@ const COMPANION = {
   name:'NOVA', avatar:'🦊', style:'coach',
   customPersona:'',
   enabled:true,
-  engine:'ollama',                    // 'ollama' (local) | 'webllm' (embarqué navigateur)
+  engine:'ollama',                    // 'ollama' (local) | 'api' (backend) | 'webllm' (embarqué)
   model:'qwen2.5:3b', endpoint:'http://localhost:11434/api/chat',
   webllmModel:'Qwen2.5-3B-Instruct-q4f16_1-MLC',
+  apiEndpoint:'',                     // URL du backend LLM (Cloudflare Worker) pour le moteur 'api'
   num_predict:70, temperature:0.85, timeoutMs:8000,
   historyMax:12, idleMs:180000,
 };
@@ -1703,6 +1705,7 @@ function moodFor(event, extra){
       return 'decu';
     }
     case 'record': return 'excite';
+    case 'play': return 'content';
     case 'levelup': return 'excite';
     case 'welcome': return 'content';
     case 'goal': return 'content';
@@ -1744,6 +1747,7 @@ function buildPrompt(event, extra){
     }
     case 'record': return `The player just beat their record on ${extra.g.title} (${extra.g.emoji}). React.`;
     case 'levelup': return `The player just reached level ${extra.level}. React.`;
+    case 'play': return `The player just launched a game of ${extra.g.title} (${extra.g.emoji}). Encourage or tease them briefly.`;
     case 'welcome': return `The player is logging in (day #${extra.day}). Welcome them.`;
     case 'goal': return `Propose the daily goal: « ${extra.goalText} ».`;
     case 'affection': return `You give a gift: ${extra.reward}. Thank and reward warmly.`;
@@ -1764,6 +1768,7 @@ function cannedReact(event, extra){
     }
     case 'record': return t('comp.react.record', {game:extra.g.title});
     case 'levelup': return t('comp.react.levelup', {level:extra.level});
+    case 'play': return `Allez, donne tout sur ${extra.g.title} !`;
     case 'welcome': return t('comp.react.welcome', {day:extra.day});
     case 'goal': return t('comp.react.goal', {goal:extra.goalText});
     case 'affection': return t('comp.react.affection', {reward:extra.reward});
@@ -1775,6 +1780,7 @@ function cannedReact(event, extra){
 async function companionAsk(event, extra){
   if(!COMPANION.enabled) return null;
   if(aiEngine()==='webllm') return await webllmAsk(event, extra);
+  if(aiEngine()==='api') return await apiAsk(event, extra);
   const sys = companionPersona()
     + '\n\nPlayer state: ' + companionContext()
     + '\n\nAnswer in one short sentence, no quotes or tags.';
@@ -1828,6 +1834,27 @@ async function webllmAsk(event, extra){
       ? String(reply.choices[0].message.content).trim() : null;
   }catch(e){ return null; }
 }
+async function apiAsk(event, extra){
+  const ep = apiEndpoint();
+  if(!ep) return null;
+  try{
+    const sys = companionPersona() + '\n\nÉtat du joueur : ' + companionContext() + '\n\nRéponds en une phrase courte.';
+    const messages = [{role:'system',content:sys}];
+    for(const m of companionHistory.slice(-8)) messages.push({role:m.role==='user'?'user':'assistant',content:m.content});
+    messages.push({role:'user',content:buildPrompt(event,extra)});
+    const ctrl = new AbortController();
+    const t = setTimeout(()=>ctrl.abort(), COMPANION.timeoutMs);
+    const r = await fetch(ep, { method:'POST', headers:{'Content-Type':'application/json'}, signal:ctrl.signal,
+      body: JSON.stringify({ messages, temperature: COMPANION.temperature, max_tokens: COMPANION.num_predict }) });
+    clearTimeout(t);
+    if(!r.ok) return null;
+    const data = await r.json();
+    return (data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+      ? String(data.choices[0].message.content).trim() : null;
+  }catch(e){ return null; }
+}
+function apiEndpoint(){ try{ return localStorage.getItem('gacha.apiEndpoint') || COMPANION.apiEndpoint || ''; }catch(e){ return COMPANION.apiEndpoint || ''; } }
+function setApiEndpoint(v){ try{ localStorage.setItem('gacha.apiEndpoint', String(v).trim()); }catch(_){ } toast('Endpoint enregistré'); }
 function setOffline(off){
   offlineMode = off;
   const st = $('#cstatus'); if(st) st.classList.toggle('off', off);
@@ -1987,9 +2014,11 @@ function viewCompanion(){
       <div class="row" style="margin-top:10px">
         <span class="muted">${t('comp.engine')}</span>
         <button class="${aiEngine()==='ollama'?'primary':'ghost'}" style="padding:6px 10px;font-size:12px" onclick="setAiEngine('ollama');render()">Ollama</button>
+        <button class="${aiEngine()==='api'?'primary':'ghost'}" style="padding:6px 10px;font-size:12px" onclick="setAiEngine('api');render()">API</button>
         <button class="${aiEngine()==='webllm'?'primary':'ghost'}" style="padding:6px 10px;font-size:12px" onclick="setAiEngine('webllm');render()">WebLLM</button>
         <span class="muted" id="llmstatus"></span>
       </div>
+      ${aiEngine()==='api'?`<div class="inputrow" style="margin-top:6px"><input id="apiendpoint" placeholder="https://xxx.workers.dev" value="${escapeHtml(apiEndpoint())}" onchange="setApiEndpoint(this.value)"/></div>`:''}
     </div>
 
     <div class="panel">

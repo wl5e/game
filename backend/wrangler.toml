@@ -1,0 +1,7 @@
+name = "arcade-gacha-llm"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# (optionnel) force une réponse rapide pour un compagnon réactif :
+# [vars]
+# MODEL = "kimi-k3"
