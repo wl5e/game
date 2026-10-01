@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Number Sequence</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>SÉRIE <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><div class="big" id="seq">2, 4, 6, 8</div><div style="display:flex;gap:8px;margin-top:12px" id="opts"></div></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Trouve le nombre suivant dans la suite. Une erreur = fin.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('sequence.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('sequence.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('sequence.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+let streak=0, running=true, ans=0;
+function q(){ const start=1+Math.floor(Math.random()*9), step=1+Math.floor(Math.random()*5); const seq=[start,start+step,start+2*step,start+3*step]; ans=start+4*step; $('#seq').textContent=seq.join(', ')+', ?'; const opts=new Set([ans]); while(opts.size<4) opts.add(ans+Math.floor(Math.random()*9)-4); $('#opts').innerHTML=[...opts].sort(()=>Math.random()-0.5).map(v=>`<button class="opt">${v}</button>`).join(''); $('#opts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ if(parseInt(b.textContent)===ans){ streak++; $('#score').textContent=streak; } else { running=false; saveHigh(streak); $('#area').innerHTML='<div class="big">PERDU ! Série '+streak+'</div>'; return; } q(); }); }
+$('#go').onclick=()=>{ streak=0; running=true; $('#score').textContent='0'; $('#area').innerHTML='<div class="big" id="seq">2, 4, 6, 8</div><div style="display:flex;gap:8px;margin-top:12px" id="opts"></div>'; q(); };
+upd();
+</script>
+</body>
+</html>

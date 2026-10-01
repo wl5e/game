@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Shooter</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>Cibles <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Clique les cibles qui apparaissent. 30 s.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('shooter.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('shooter.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('shooter.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+const cv=$('#cv'),c=cv.getContext('2d'); let targets=[], score=0, t=30000, raf=null;
+function spawn(){ if(targets.length<3 && Math.random()<0.03) targets.push({x:30+Math.random()*(cv.width-60),y:30+Math.random()*(cv.height-60),r:16,life:120}); }
+function frame(){ spawn(); targets.forEach(x=>x.life--); targets=targets.filter(x=>x.life>0); c.clearRect(0,0,cv.width,cv.height); targets.forEach(x=>{ c.fillStyle='#f87171'; c.beginPath(); c.arc(x.x,x.y,x.r,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.arc(x.x,x.y,x.r*0.5,0,7); c.fill(); }); raf=requestAnimationFrame(frame); }
+cv.onclick=e=>{ const r=cv.getBoundingClientRect(); const x=(e.clientX-r.left)*(cv.width/r.width), y=(e.clientY-r.top)*(cv.height/r.height); for(let i=targets.length-1;i>=0;i--){ const q=targets[i]; if((x-q.x)**2+(y-q.y)**2 < q.r*q.r){ targets.splice(i,1); score++; $('#score').textContent=score; break; } } };
+$('#go').onclick=()=>{ targets=[]; score=0; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); setTimeout(()=>{ cancelAnimationFrame(raf); saveHigh(score); },t); };
+upd();
+</script>
+</body>
+</html>

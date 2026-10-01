@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Quick Math</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>BONS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><div class="big" id="q">3+4=7</div><div style="display:flex;gap:10px;margin-top:12px"><button class="opt" id="ok">VRAI</button><button class="opt" id="no">FAUX</button></div></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Compare : est-ce que le calcul est juste ? 30 s.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('quickmath.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('quickmath.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('quickmath.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+let score=0, t=30000, good=false;
+function q(){ const a=1+Math.floor(Math.random()*20), b=1+Math.floor(Math.random()*20); const ops=['+','-','×']; const op=ops[Math.floor(Math.random()*ops.length)]; let r=op==='+'?a+b:op==='-'?a-b:a*b; good=Math.random()<0.5; if(!good) r+=Math.floor(Math.random()*5)+1; $('#q').textContent=a+op+b+'='+r; }
+function judge(v){ if(v===good){ score++; $('#score').textContent=score; } q(); }
+$('#ok').onclick=()=>judge(true); $('#no').onclick=()=>judge(false);
+$('#go').onclick=()=>{ score=0; $('#score').textContent='0'; q(); setTimeout(()=>{ saveHigh(score); },t); };
+upd();
+</script>
+</body>
+</html>

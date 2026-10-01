@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Balance</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>TEMPS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><canvas id="cv" width="420" height="230"></canvas></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Garde la balle en équilibre avec ◀ ▶.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('balance.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('balance.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('balance.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+const cv=$('#cv'),c=cv.getContext('2d'); let bx=210, vx=0, tilt=0, t=0, alive=true, raf=null;
+function frame(){ tilt*=0.95; if(keys['ArrowLeft']) tilt-=0.4; if(keys['ArrowRight']) tilt+=0.4; vx+=tilt; bx+=vx; if(bx<12||bx>cv.width-12){ alive=false; } if(!alive){ const s=Math.floor(t/30); saveHigh(s); cancelAnimationFrame(raf); c.fillStyle='#f87171';c.font='bold 20px monospace';c.textAlign='center';c.fillText(s+' s',cv.width/2,cv.height/2); return; } t++; c.clearRect(0,0,cv.width,cv.height); c.fillStyle='#64748b'; c.fillRect(0,150,cv.width,6); c.strokeStyle='#94a3b8'; c.lineWidth=4; c.beginPath(); c.moveTo(210,150); c.lineTo(210+tilt*30,150-20); c.stroke(); c.fillStyle='#fbbf24'; c.beginPath(); c.arc(bx,100,12,0,7); c.fill(); $('#score').textContent=Math.floor(t/30); raf=requestAnimationFrame(frame); }
+let keys={}; document.addEventListener('keydown',e=>keys[e.key]=true); document.addEventListener('keyup',e=>keys[e.key]=false);
+$('#go').onclick=()=>{ bx=210; vx=0; tilt=0; t=0; alive=true; $('#score').textContent='0'; cancelAnimationFrame(raf); frame(); };
+upd();
+</script>
+</body>
+</html>

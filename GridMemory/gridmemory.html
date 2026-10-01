@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Grid Memory</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>NIVEAU <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Mémorise les cases allumées, puis re-clique-les. Niveau = cases à retenir.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('gridmemory.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('gridmemory.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('gridmemory.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+let level=1, phase='show', cells=[];
+function render(){ const g=$('#g'); g.innerHTML=''; for(let i=0;i<9;i++){ const d=document.createElement('div'); d.style.cssText='width:60px;height:60px;border-radius:10px;background:#1e293b;border:1px solid #334155;cursor:pointer'; d.onclick=()=>click(i); g.appendChild(d); } }
+function lit(){ document.querySelectorAll('#g div').forEach((d,i)=>{ d.style.background=cells.includes(i)?'#4ade80':'#1e293b'; }); }
+function show(){ cells=[]; while(cells.length<Math.min(level,9)){ const i=Math.floor(Math.random()*9); if(!cells.includes(i)) cells.push(i); } lit(); setTimeout(()=>{ document.querySelectorAll('#g div').forEach(d=>d.style.background='#1e293b'); phase='pick'; }, 900); }
+let picked=[];
+function click(i){ if(phase!=='pick') return; picked.push(i); document.querySelectorAll('#g div')[i].style.background='#4ade80'; if(picked.length===cells.length){ if(picked.every((v,j)=>v===cells[j])){ level++; $('#score').textContent=level; setTimeout(()=>{ picked=[]; show(); },500); } else { saveHigh(level); $('#area').innerHTML='<div class="big">FINI ! Niveau '+level+'</div>'; } } }
+$('#go').onclick=()=>{ level=1; picked=[]; phase='show'; $('#score').textContent='1'; $('#area').innerHTML='<div id="g" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px"></div>'; render(); show(); };
+upd();
+</script>
+</body>
+</html>

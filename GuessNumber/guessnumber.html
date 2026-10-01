@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Guess the Number</title>
+<style>
+  *{box-sizing:border-box} html,body{height:100%}
+  body{margin:0;display:grid;place-items:center;background:radial-gradient(120% 80% at 50% 0%,#16233a 0%,#070b12 65%);font-family:ui-monospace,Menlo,Consolas,monospace;color:#cbd5e1;padding:16px;-webkit-tap-highlight-color:transparent}
+  .wrap{width:min(92vw,460px);display:flex;flex-direction:column;gap:12px}
+  .hud{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.15em;color:#64748b}
+  .hud b{color:#38bdf8;font-size:20px;margin-left:6px}
+  .area{background:#0b1220;border:1px solid #1e293b;border-radius:14px;min-height:230px;display:grid;place-items:center;padding:16px;text-align:center;user-select:none;position:relative;overflow:hidden}
+  button{font-family:inherit;border:0;border-radius:10px;padding:11px 15px;font-size:14px;font-weight:700;background:#0ea5e9;color:#04222a;cursor:pointer}
+  button:active{transform:translateY(1px)}
+  .hint{color:#64748b;font-size:11px;text-align:center;line-height:1.6}
+  .big{font-size:26px;font-weight:800}
+  .opt{background:#1e293b;border:1px solid #334155;color:#e2e8f0;border-radius:10px;padding:10px 14px;font-size:16px;font-weight:700;margin:4px;cursor:pointer}
+  .opt:hover{border-color:#38bdf8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hud"><span>ESSAIS <b id="score">0</b></span><span>BEST <b id="best">—</b></span></div>
+  <div class="area" id="area"><div class="big" id="msg">?</div><input id="in" type="number" min="1" max="100" style="background:#0a1322;border:1px solid #334155;border-radius:8px;color:#e2e8f0;padding:8px;font-size:18px;text-align:center;width:120px"></div>
+  <button id="go">Rejouer</button>
+  <div class="hint">Trouve le nombre entre 1 et 100. Moins d'essais = mieux.</div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+let best=0;try{best=parseInt(localStorage.getItem('guessnumber.best')||'0',10)||0}catch(e){}
+function saveHigh(v){ if(v>best){best=v;try{localStorage.setItem('guessnumber.best',String(v))}catch(e){}} upd(); }
+function saveLow(v){ if(best===0||v<best){best=v;try{localStorage.setItem('guessnumber.best',String(v))}catch(e){}} upd(); }
+function upd(){ $('#best').textContent=best?best:'—'; }
+let target=0, tries=0;
+$('#in').onkeydown=e=>{ if(e.key!=='Enter') return; const v=parseInt($('#in').value); if(isNaN(v)) return; tries++; if(v===target){ saveLow(tries); $('#score').textContent=tries; $('#msg').textContent='Trouvé en '+tries+' !'; } else { $('#msg').textContent = v<target ? 'Plus grand !' : 'Plus petit !'; $('#in').value=''; } };
+$('#go').onclick=()=>{ target=1+Math.floor(Math.random()*100); tries=0; $('#score').textContent='0'; $('#msg').textContent='?'; $('#in').value=''; };
+upd();
+</script>
+</body>
+</html>
